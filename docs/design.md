@@ -78,11 +78,16 @@ Les boutons et les champs sont arrondis en `md`, les cartes et les panneaux en `
 
 | Composant | Description |
 |---|---|
-| **barre du haut** | sur ordinateur : la marque, les espaces (soulignés en accent quand ils sont choisis), le type de bien en boutons segmentés, puis le rond Réglages. Sur téléphone : le lieu en titre à gauche (« INSULA » au-dessus de L'Ouest, « ‹ ville » en ville), le type de bien en pastille bordée, puis les trois vues en icônes. |
-| **menu du bas** (téléphone) | quatre espaces. Celui où l'on est a un trait de 28 × 3 px en accent en haut, une icône remplie et son nom en gras et en couleur. La barre a une ombre légère, pas de filet. |
+| **barre du haut** | sur ordinateur : la marque, les espaces (soulignés en accent quand ils sont choisis), le type de bien en boutons segmentés, puis le rond Réglages. Sur téléphone : le titre à gauche (« INSULA · L'OUEST » au-dessus d'Annonces ou de Villes, « ‹ ville » en ville), le type de bien en pastille bordée, les trois vues en icônes, puis le rond Réglages. Nos biens et Projet ont aussi le rond, à droite de leur titre. |
+| **menu du bas** (téléphone) | Annonces, Villes, Nos biens, Projet. Celui où l'on est a un trait de 28 × 3 px en accent en haut, une icône remplie et son nom en gras et en couleur. La barre a une ombre légère, pas de filet. |
 | **boutons segmentés** | un creux `--sunk`, et le choix en `--surface` (vues) ou en `--accent` (type de bien, Villes / Annonces). |
 | **lignes de liste** | à gauche, le nom et une ligne de faits (« 75 k€ tout compris · −58 €/mois · Paris 3 h 35 ») ; à droite, le rendement en couleur, avec la fourchette prudent / favorable en dessous. |
-| **fiche** | un en-tête compact (vignette, titre, trois chiffres), puis des onglets ; « L'essentiel » d'abord. Sur téléphone, un panneau à trois hauteurs (bandeau, demi-écran, plein écran). |
+| **fiche** | en pleine page sur téléphone, à la place de la liste sur ordinateur. Une barre collée en haut : Retour (chevron et mot), le titre, ‹ i sur n ›, Partager. Puis l'en-tête sur `--surface` : la photo en 16:9, le titre en `--font-display`, une ligne de faits, les **trois chiffres** et « **À regarder** ». Puis les **questions** sur le fond `--bg`. En bas, la **barre d'actions**. |
+| **trois chiffres** | Rendement, Cash-flow, Budget : trois cases `--bg` arrondies en `md`, le libellé en 11,5 px `--muted`, la valeur en 20 px gras (rendement en couleur de rendement, cash-flow en `--ok` / `--bad`, 0 € en `--fg`), l'unité en clair dessous (« par an, sur 15 ans », « par mois, à 2 », « tout compris »). |
+| **À regarder** | titre en petites capitales `--muted`, au plus trois points, un rond de 8 px `--bad` ou `--warn` devant chacun, les plus graves d'abord ; au-delà, un lien vers « Qu'est-ce qui peut mal tourner ? ». Pas de phrase de conclusion. |
+| **question** | une carte `--surface` arrondie en `lg`, bordée de `--line` (teintée d'accent quand elle est ouverte). La question en 15,5 px gras, sa ligne de faits en 13 px `--muted`, un chevron qui se retourne. Ouverte, ses rubriques dessous. Une question ouverte le reste quand la fiche se redessine ; une autre fiche repart repliée. |
+| **gagnant** | dans « Combien ça coûte et rapporte ? » : une case `--bg`, « Si on revend : gagnant après N ans » en gras et sa définition en clair. |
+| **barre d'actions** | collée en bas de la fiche, `--surface` avec une ombre vers le haut : « ☆ Suivre ce bien » (`--accent`, toute la largeur restante) ou « ★ Suivi · étape », et « Voir l'annonce ↗ ». Boutons de 48 px de haut. |
 | **légende de la carte** | repliée en pastille ; ouverte, l'échelle, ce qu'on voit autour et le choix de la mesure. |
 | **marque** | une maison ardoise, avec une fenêtre jaune (`tools/icone.svg`, `icons/`). |
 

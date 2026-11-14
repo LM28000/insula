@@ -18,7 +18,10 @@
  /* un état abîmé ou d'une version précédente : retour sur Explorer, en carte */
  if(!["explorer","biens","projet","reglages"].includes(V.tab)) V.tab="explorer"; if(!["carte","liste","graph"].includes(V.view)) V.view="carte";
  if(!["villes","annonces"].includes(V.obj)) V.obj="villes"; if(!V.popen||typeof V.popen!=="object") V.popen={}; if(V.vue==="short") V.vue="crit";
- const onMap=()=>V.tab==="explorer"&&V.view==="carte";   /* la carte est à l'écran */
+ /* téléphone : l'accueil est la liste des annonces, la carte un bouton (refonte du 14 novembre 2026) ; une fois pour ceux qui partaient de la carte */
+ if(matchMedia("(max-width:860px)").matches&&!V.p3){V.p3=1; V.view="liste"; V.obj="annonces";}
+ const onMap=()=>V.tab==="explorer"&&V.view==="carte";
+ const home=()=>matchMedia("(max-width:860px)").matches?"liste":"carte";   /* la vue de départ : liste sur le téléphone, carte sur l'ordinateur */   /* la carte est à l'écran */
  /* critères : communs à deux (13-reglages-communs.js) ; ceux d'avant, gardés dans ce navigateur, sont repris une fois */
  if(!NOSCRIT&&V.crit&&V.crit.done){NOSCRIT={budget:+V.crit.budget||CRIT0.budget,rmin:+V.crit.rmin,bank:V.crit.bank!==false}; try{localStorage.setItem("crit",JSON.stringify(NOSCRIT));}catch(_){}}
  delete V.crit; delete V.loc;
@@ -120,7 +123,9 @@
  /* ---------- squelette : quatre espaces, les mêmes sur ordinateur (en haut) et sur téléphone (en bas) ----------
     Réglages : le rond à l'initiale, en haut à droite sur ordinateur, quatrième entrée en bas sur téléphone. */
  const TABS=[["explorer","Explorer"],["biens","Nos biens"],["projet","Projet"],["reglages","Réglages"]];
- const ICO={explorer:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2z"/>',biens:'<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',projet:'<path d="M9 4h6v3H9zM7 5.5H5v15h14v-15h-2M8.5 12h7M8.5 16h5"/>'};
+ const PTABS=[["annonces","Annonces"],["villes","Villes"],["biens","Nos biens"],["projet","Projet"]];
+ const pcur=k=>(k==="annonces"?V.tab==="explorer"&&(!!V.city||V.obj==="annonces"):k==="villes"?V.tab==="explorer"&&!V.city&&V.obj==="villes":V.tab===k)?"page":"false";
+ const ICO={annonces:'<path d="M4 6h16M4 12h16M4 18h10"/>',villes:'<path d="M4 20V9l5-3v14M9 20V4l7 3v13M16 20v-9l4 2v7M3 20h18"/>',explorer:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2z"/>',biens:'<path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',projet:'<path d="M9 4h6v3H9zM7 5.5H5v15h14v-15h-2M8.5 12h7M8.5 16h5"/>'};
  const MARK='<svg class="v3mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2c4766"/><path d="M11 28 L32 12 L53 28 Z" fill="#dbe4ef"/><rect x="16" y="28" width="32" height="26" rx="2" fill="#ffffff"/><rect x="21" y="33" width="8" height="7" rx="1.5" fill="#2c4766"/><rect x="35" y="33" width="8" height="7" rx="1.5" fill="#f2c14e"/><rect x="21" y="44" width="8" height="7" rx="1.5" fill="#2c4766"/><rect x="35" y="44" width="8" height="10" rx="1.5" fill="#2c4766"/></svg>';
  const VIEWS=[["carte","Carte",'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>'],["liste","Liste",'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'],["graph","Graphique",'<path d="M3 3v18h18"/><circle cx="8" cy="15" r="1.5"/><circle cx="12" cy="10" r="1.5"/><circle cx="16" cy="13" r="1.5"/><circle cx="19" cy="7" r="1.5"/>']];
  const svgI=p=>`<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</g></svg>`;
@@ -137,7 +142,7 @@
   const nb=att.size, cur=k=>V.tab===k?"page":"false";
   app.dataset.tab=V.tab; app.dataset.view=V.view;
   $("v2tabs").innerHTML=TABS.filter(t=>t[0]!=="reglages").map(([k,l])=>`<button type="button" data-v2tab="${k}" aria-current="${cur(k)}">${l}${k==="biens"&&nb?`<small title="à trancher ou modifiés par les autres">${nb}</small>`:""}</button>`).join("");
-  $("v2tabbar").innerHTML=TABS.map(([k,l])=>`<button type="button" data-v2tab="${k}" aria-current="${cur(k)}">${k==="reglages"?`<span class="v3av sm" aria-hidden="true">${initial()}</span>`:svgI(ICO[k])}${l}${k==="biens"&&nb?`<small class="v2bdg">${nb}</small>`:""}</button>`).join("");
+  $("v2tabbar").innerHTML=PTABS.map(([k,l])=>`<button type="button" ${k==="annonces"||k==="villes"?`data-v3nav="${k}"`:`data-v2tab="${k}"`} aria-current="${pcur(k)}">${svgI(ICO[k])}${l}${k==="biens"&&nb?`<small class="v2bdg">${nb}</small>`:""}</button>`).join("");
   const av=$("v3av"); av.innerHTML=initial(); av.setAttribute("aria-current",cur("reglages")); av.setAttribute("aria-label",`Réglages et aide${myName()?" ("+myName()+")":""}`); av.title="Réglages et aide";
   $("v2type").innerHTML=V.tab==="explorer"?typeSeg(true):"";
   scope();}
@@ -154,7 +159,7 @@
  const CHEVR='<svg class="v3chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
  const CHEVL='<svg class="v3chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>';
  function scope(){const el=$("v3scope"); if(!el) return; el.hidden=V.tab!=="explorer"; if(el.hidden){el.innerHTML=""; return;} const ph=PH();
-  el.innerHTML=`<div class="v2crumb v3crumb">${V.city?(ph?`<button type="button" class="v3back" data-v2city="" aria-label="Retour à l'Ouest" title="L'Ouest">${CHEVL}</button><b>${esc(cityName(V.city))}</b>`:`<button type="button" data-v2city="">L'Ouest</button><span aria-hidden="true">›</span><b>${esc(cityName(V.city))}</b>`):ph?`<span class="v3crst"><small>Insula</small><b>L'Ouest</b></span>`:`<b>L'Ouest</b>`}</div>${ph?typeSel():""}${V.city?(ph?"":`<button type="button" class="v2btn sm" data-v2cfiche="${V.city}" title="Prix, loyers, calcul, quartiers, habitants">Tout sur ${esc(cityName(V.city))}</button>`):ph?"":objSeg()}<span class="v2sp"></span><span class="v3vsw" role="group" aria-label="Vue">${VIEWS.map(([k,l,ic])=>`<button type="button" data-v3view="${k}" aria-pressed="${V.view===k}" aria-label="${l}" title="${l}">${svgI(ic)}${ph&&V.view!==k?"":`<span>${l}</span>`}</button>`).join("")}</span>`;}
+  el.innerHTML=`<div class="v2crumb v3crumb">${V.city?(ph?`<button type="button" class="v3back" data-v2city="" aria-label="Retour à l'Ouest" title="L'Ouest">${CHEVL}</button><b>${esc(cityName(V.city))}</b>`:`<button type="button" data-v2city="">L'Ouest</button><span aria-hidden="true">›</span><b>${esc(cityName(V.city))}</b>`):ph?`<span class="v3crst"><small>Insula · l'Ouest</small><b>${V.obj==="annonces"?"Annonces":"Villes"}</b></span>`:`<b>L'Ouest</b>`}</div>${ph?typeSel():""}${V.city?(ph?"":`<button type="button" class="v2btn sm" data-v2cfiche="${V.city}" title="Prix, loyers, calcul, quartiers, habitants">Tout sur ${esc(cityName(V.city))}</button>`):ph?"":objSeg()}<span class="v2sp"></span><span class="v3vsw" role="group" aria-label="Vue">${VIEWS.map(([k,l,ic])=>`<button type="button" data-v3view="${k}" aria-pressed="${V.view===k}" aria-label="${l}" title="${l}">${svgI(ic)}${ph&&V.view!==k?"":`<span>${l}</span>`}</button>`).join("")}</span>${ph?`<button type="button" class="v3av v3avp" data-v2tab="reglages" aria-label="Réglages et aide" title="Réglages et aide">${initial()}</button>`:""}`;}
 
  /* ---------- carte (MapLibre, fonds vectoriels OpenFreeMap, sans clé) ----------
     Tout est sur la carte en même temps et le zoom décide de ce qu'on voit, sans bouton :
@@ -552,7 +557,7 @@
   else if(ph) body=`<div class="v2tw">${shown.map(o=>`<div class="v2row v2r3${V.sel===key(o)?" on":""}" role="button" tabindex="0" data-v2open="${esc(key(o))}">${img(photo(o,200,150),"")}<b>${keur(o.a[2])} · ${String(o.a[0]).replace(".",",")} m²${V.tous?` <span class="v2ty">${tyOfO(o)}</span>`:""}${o.nw?'<span class="v2new">nouv.</span>':""}${ageChip(o)}</b><span class="v2rv" style="color:${cv(colIrr(o.x.irr))}">${pctS(o.x.irr)}</span><span class="v2rs">${esc(where(o))}</span><span>${rng(o,64)}</span>${cfLine(o)}</div>`).join("")}</div>`;
   else body=`<div class="v2tw"><table class="v2t v2wide"><thead><tr><th></th><th></th>${th("p","Prix",1)}${th("s","m²",1)}<th>Ville · quartier</th>${th("irr","Rendement 15 ans",1)}<th>Fourchette</th>${th("cf","Cash-flow",1)}${th("m2","€/m²",1)}${th("age","En ligne",1)}${showBank?"<th>Banque</th>":""}<th>DPE · signaux</th></tr></thead><tbody>${shown.map(o=>{const [bc,bt]=bank(o.x.ratio); return `<tr class="${V.sel===key(o)?"on":""}" data-v2open="${esc(key(o))}" tabindex="0"><td>${starBtn(o)}</td><td>${img(photo(o,160,120),"v2th")}</td><td class="r mono"><b>${keur(o.a[2])}</b>${o.nw?'<span class="v2new">nouv.</span>':""}${o.v&&o.v.last?`<span class="v2drop">↓ ${keur(o.v.last.amt)}</span>`:""}</td><td class="r mono">${String(o.a[0]).replace(".",",")}${V.tous?`<div class="v2sub" style="font-size:11.5px">${tyOfO(o)}</div>`:""}</td><td><b>${esc(cityName(o.ck))}</b><div class="v2sub" style="font-size:12px">${esc(o.t?o.t.name:o.a[1]||"")}</div></td><td class="r mono" style="color:${cv(colIrr(o.x.irr))};font-weight:700">${pctS(o.x.irr)}</td><td>${rng(o)}</td><td class="r mono" style="color:${cfC(o.x.cf)}">${sgn(o.x.cf)}</td><td class="r mono">${nf(o.a[2]/o.a[0])}</td><td class="r mono" title="${esc(ageTxt(o))}">${o.v?`${o.v.days} j`:"—"}${o.v&&o.v.drops?`<div class="v2sub" style="font-size:11.5px;color:var(--ok)">↓ ${fr(dropPct(o),0)} % (${o.v.drops})</div>`:""}</td>${showBank?`<td><span class="v2pill ${bc==="p-ok"?"ok":bc==="p-warn"?"warn":"bad"}">${bt}</span></td>`:""}<td>${o.f.dpe?`<span class="v2pill ${"FG".includes(o.f.dpe)?"bad":o.f.dpe==="E"?"warn":""}">DPE ${o.f.dpe}</span> `:""}${ficheBadges(o.a[3],true)||""}</td></tr>`;}).join("")}</tbody></table></div>`;
   const critB=`<button type="button" class="v2btn sm v2critb" data-v2crit title="Modifier nos critères">≤ ${keur(critV().budget)} · ≥ ${fr(critV().rmin)} %${critV().bank?" · banque":""}</button>`;
-  el.innerHTML=`<div class="v2in">${ph&&!V.city?`<div class="v2bar">${objSeg()}</div>`:""}${ph&&V.city?cityLink(V.city):""}
+  el.innerHTML=`<div class="v2in">${ph&&V.city?cityLink(V.city):""}
    <div class="v2bar"><div class="v2chips v2scroll">${vueChips(V.city)}${ph?critB:""}</div>${ph?"":`<span class="v2sp"></span>${critB}`}</div>
    <p class="v2sub">${L0.length} ${typlL()}${V.city?" à "+esc(cityName(V.city)):` dans ${cities.length} villes`} · relevé du ${esc(ADSRAW.date||ADS.date||"")}${av==="nuage"?"":` · ${(SORTM.find(([v])=>v===V.sort.join("|"))||[0,"tri choisi"])[1].toLowerCase()}`}</p>
    ${ph&&av!=="nuage"&&L0.length>1?`<label class="v2sortm"><span>Trier</span><select data-v2sortm aria-label="Trier les annonces">${SORTM.map(([v,l])=>`<option value="${v}"${V.sort.join("|")===v?" selected":""}>${l}</option>`).join("")}${SORTM.some(([v])=>v===V.sort.join("|"))?"":`<option selected>${esc(V.sort[0])}</option>`}</select></label>`:""}
@@ -565,7 +570,7 @@
   const body=!gr&&ph?`<div class="v2tw">${R.map(r=>`<div class="v2row${r.m?"":" v2dim"}" role="button" tabindex="0" data-v2city="${r.c.k}" style="grid-template-columns:minmax(0,1fr) auto"><b>${esc(r.c.name)}</b><span class="v2rv" style="color:${cv(colIrr(r.x.irr))}">${pctS(r.x.irr)}</span><span class="v2rs">${keur(r.x.cost)} tout compris · ${sgn(r.x.cf)}/mois · loyer ${eur(r.x.rentHC)}</span><span class="v2rs" style="text-align:right">${rng(r,64)}</span><span class="v2rs v2match">${r.n?`<b>${r.m}</b> sur ${r.n} pour nos critères · ${nf(r.c.students)} étudiants${(e=>e&&e.tend!=null?` (${e.tend>=0?"+":"−"}${fr(Math.abs(e.tend),1)} %/an)`:"")(etuOf(r.c.k))}`:`${nf(r.c.students)} étudiants · pas d'annonces relevées`}</span></div>`).join("")}</div>`
    :gr?nuage({w:ph?420:900,h:ph?480:460,label:"Rendement des villes selon le nombre d'étudiants",x:[3.2,5],xt:[3.3,3.5,3.7,4,4.3,4.6,4.9],y:[-4,9],xf:v=>nf(Math.pow(10,v)/1000)+" k",yf:v=>fr(v,0)+" %",xl:"étudiants (échelle logarithmique)",yl:`rendement 15 ans · ${scn()}`,pts:R.map(r=>({x:Math.log10(r.c.students),y:r.x.irr,lo:r.z.prudent,hi:r.z.favorable,c:cv(colIrr(r.x.irr)),r:r.m?8:6,op:r.m?.95:.55,city:r.c.k,lab:r.c.name,t:`${r.c.name} · ${pctS(r.x.irr)} · ${r.m} annonce${r.m>1?"s":""} pour nos critères`}))})+`<div class="v2leg"><span>Grandes pastilles : des annonces pour nos critères</span><span>Trait : du prudent au favorable</span></div>`
    :`<div class="v2tw"><table class="v2t v2wide"><thead><tr><th>Ville</th>${cth("irr","Rendement 15 ans",1)}<th>Fourchette</th>${cth("cf","Cash-flow",1)}${cth("cost","Budget",1)}${cth("rent","Loyer HC",1)}${cth("stu","Étudiants",1)}${cth("m","Nos critères",1)}${showBank?"<th>Banque</th>":""}</tr></thead><tbody>${R.map(r=>{const [bc,bt]=bank(r.x.ratio); return `<tr data-v2city="${r.c.k}" tabindex="0"><td><b>${esc(r.c.name)}</b></td><td class="r mono" style="color:${cv(colIrr(r.x.irr))};font-weight:700">${pctS(r.x.irr)}</td><td>${rng(r)}</td><td class="r mono" style="color:${cfC(r.x.cf)}">${sgn(r.x.cf)}</td><td class="r mono" title="prix ${keur(r.x.bien)} + notaire, meubles et travaux">${keur(r.x.cost)}</td><td class="r mono">${eur(r.x.rentHC)}</td><td class="r mono">${nf(r.c.students)}${(e=>e&&e.tend!=null?`<small class="v2sub" style="display:block">${e.tend>=0?"+":"−"}${fr(Math.abs(e.tend),1)} %/an</small>`:"")(etuOf(r.c.k))}</td><td class="r mono">${r.n?`${r.m} / ${r.n}`:"—"}</td>${showBank?`<td><span class="v2pill ${bc==="p-ok"?"ok":bc==="p-warn"?"warn":"bad"}">${bt}</span></td>`:""}</tr>`;}).join("")}</tbody></table></div>`;
-  el.innerHTML=`<div class="v2in">${ph?`<div class="v2bar">${objSeg()}</div>`:""}<p class="v2sub">${C.length} villes · ${V.tous?"tous types, médiane des annonces de chaque ville":`${tyl().toLowerCase()} type de ${H.surface} m²`} · ${eur(H.apport)} d'apport · scénario ${scn()}</p>${body}<p class="v2sub">Touchez une ville pour voir ses annonces. Une ville sans annonces relevées est calculée sur ses ventes réelles et ses loyers.</p></div>`;}
+  el.innerHTML=`<div class="v2in"><p class="v2sub">${C.length} villes · ${V.tous?"tous types, médiane des annonces de chaque ville":`${tyl().toLowerCase()} type de ${H.surface} m²`} · ${eur(H.apport)} d'apport · scénario ${scn()}</p>${body}<p class="v2sub">Touchez une ville pour voir ses annonces. Une ville sans annonces relevées est calculée sur ses ventes réelles et ses loyers.</p></div>`;}
 
  /* ---------- onglet Nos biens : avis à deux ---------- */
  const VOT=[["o","Garder"],["m","À voir"],["n","Passer"]];
@@ -590,7 +595,7 @@
   const empty=`<div class="v2card"><p class="v2empty">Aucun bien pour l'instant. Touchez « Suivre » sur une annonce pour la retrouver ici, ou ajoutez un bien repéré ailleurs.</p></div>`;
   const body=!L0.length?empty:ph?`<div class="v2tw">${by[cur].length?by[cur].map(o=>bCard(o,me,oth)).join(""):`<p class="v2empty">Aucun bien à l'étape « ${esc((STEPS.find(s=>s[0]===cur)||[])[1]||cur)} ».</p>`}</div>`
    :`<div class="v3cols">${STEPS.map(([k,l])=>`<section class="v3col" aria-label="${l}"><h2 class="v3colh">${l} <small>${by[k].length}</small></h2>${by[k].map(o=>bCard(o,me,oth,true)).join("")||`<p class="v2sub v3col0">${k==="à voir"?"Les biens suivis arrivent ici.":"Aucun bien à cette étape."}</p>`}</section>`).join("")}</div>`;
-  el.innerHTML=`<div class="v2in v3biens"><div class="v2bar"><h1 class="v2h1">Nos biens</h1><span class="v2sub">${esc(who)}</span><span class="v2sp"></span><button type="button" class="v2btn sm pri" data-v2add>Ajouter un bien</button></div>
+  el.innerHTML=`<div class="v2in v3biens"><div class="v2bar"><h1 class="v2h1">Nos biens</h1><span class="v2sub">${esc(who)}</span><span class="v2sp"></span><button type="button" class="v2btn sm pri" data-v2add>Ajouter un bien</button><button type="button" class="v3av v3avp" data-v2tab="reglages" aria-label="Réglages et aide" title="Réglages et aide">${initial()}</button></div>
    ${newsHtml(NEWS||bouge(),"biens")}
    ${cmpCard(L0)}
    ${L0.length?`${ph?steps:""}<div class="v2chips">${n.des?`<span class="v2pill warn">${n.des} à trancher</span>`:""}${n.att?`<span class="v2pill">${n.att} en attente d'un avis</span>`:""}${n.acc?`<span class="v2pill ok">${n.acc} d'accord</span>`:""}${L0.length>1&&CMPS.size<2?`<span class="v2sub">Cochez 2 à 4 biens pour les comparer.</span>`:""}</div>`:""}
@@ -682,7 +687,7 @@
   const sumB=`Apport ${eur(H.apport)} · crédit à ${fr(H.taux,2)} % sur ${H.duree} ans · notaire ${fr(H.notaire)} %`;
   const sumA=`${A.length} associé${A.length>1?"s":""}${A.length>1?` (${A.map(a=>fr(a.part,0)+" %").join(" · ")})`:""} · tranche${tmis.length>1?"s":""} d'impôt ${tmis.map(t=>t+" %").join(", ")} · ${regL}`;
   const sumH=`${fr(H.vacance)} mois vide${H.vacance>1?"s":""} par an · prix ${H.px>=0?"+":""}${fr(H.px)} %/an${H.pxV?" selon la ville":""} · loyers ${H.ly>=0?"+":""}${fr(H.ly)} %/an · ${+H.gestion?`gestion ${fr(H.gestion)} % du loyer`:"gestion par nous-mêmes"} · ${fr(H.fraisVente)} % à la revente`;
-  el.innerHTML=`<div class="v2in v3projet"><div class="v2bar"><h1 class="v2h1">Projet</h1><span class="v2sp"></span>${nch?`<button type="button" class="v2btn sm" data-v2reset>Revenir aux valeurs par défaut (${nch} changée${nch>1?"s":""})</button>`:""}</div>
+  el.innerHTML=`<div class="v2in v3projet"><div class="v2bar"><h1 class="v2h1">Projet</h1><span class="v2sp"></span>${nch?`<button type="button" class="v2btn sm" data-v2reset>Revenir aux valeurs par défaut (${nch} changée${nch>1?"s":""})</button>`:""}<button type="button" class="v3av v3avp" data-v2tab="reglages" aria-label="Réglages et aide" title="Réglages et aide">${initial()}</button></div>
    <p class="v2sub v2regnote">${ri?`Commun à ${nous()} : un changement ici change les chiffres de tous.${ri.par?` Dernière modification par ${esc(ri.par)}${ri.le?" le "+esc(dateTxt(ri.le.slice(0,10)).replace(/\.$/,"")):""}.`:""}`:"Pas encore partagé : sans code de groupe (Réglages), ce projet reste dans ce navigateur."} Les valeurs différentes du défaut sont signalées.</p>
    <div class="v3pgrid"><div class="v3pcol">
    <div class="v2card"><div class="v2bar"><h2>Nos critères</h2><span class="v2sp"></span><button type="button" class="v2btn sm" data-v2crit>Modifier</button></div><p class="v3sum">${sumC}</p><p class="v2sub">${feed().filter(pass).length} annonces correspondent aujourd'hui, sur ${feed().length} relevées.</p></div>
@@ -697,7 +702,7 @@
    ${pcard("poids","Ce qui pèse le plus",`ce que chaque hypothèse change au rendement d'${tyLow()==="studio"?"un studio":"un "+tyl()} type`,sensi())}
    </div></div></div>`;}
  function pReglages(){retoursLus(); document.querySelectorAll("#v2p-reglages .v2src").forEach(n=>HOLD.appendChild(n)); const el=$("v2p-reglages"), me=myName()||"", code=sbCode();
-  el.innerHTML=`<div class="v2in v3regl"><h1 class="v2h1">Réglages</h1>
+  el.innerHTML=`<div class="v2in v3regl"><div class="v2bar"><button type="button" class="v2btn sm v3ret v3retp" data-v2tab="${V.prev||"explorer"}" aria-label="Retour">${CHEVL}<span>Retour</span></button><h1 class="v2h1">Réglages</h1></div>
    <div class="v2card"><h2>Vous et votre groupe</h2>
     <p class="v2sub">${code?`Vous partagez les biens suivis, les avis et le projet avec le code du groupe, sous le prénom « ${esc(me||"?")} ».`:"Votre prénom distingue vos avis de ceux des autres. Avec un code de groupe, vous partagez les biens suivis, les avis et le projet ; sans code, tout reste dans ce navigateur."}</p>
     <div class="v2grid v2f"><div><label for="v2nom2">Prénom</label><input type="text" id="v2nom2" maxlength="30" value="${esc(me)}" placeholder="Prénom"></div><div><label for="v2code">Code du groupe</label><span class="v3code"><input type="password" id="v2code" maxlength="60" value="${esc(code)}" autocomplete="off" spellcheck="false"><button type="button" class="v2btn sm" data-v3showcode aria-pressed="false">Afficher</button></span></div></div>
@@ -714,12 +719,18 @@
   const slot=$("v2srcslot"); document.querySelectorAll("#appHold .v2src, #v2hold .v2src").forEach(n=>slot.appendChild(n)); HOLD.querySelectorAll(".v2src").forEach(n=>slot.appendChild(n));}
 
  /* ---------- fiche unique en onglets ---------- */
- const FT=[["bien","L'essentiel",["annonce","copro"]],["prix","Le prix",["prix","ann"]],["calc","Le calcul",["poids","loyer","calc"]],["quartier","Le quartier",["traj","vie","offre","bati","risq","hab","ecoles","urba"]],["achat","L'achat",["suivi","visite","src"]]];
  /* les rubriques de la fiche de l'app, et le résumé d'une ligne de chacune (pour « L'essentiel ») */
  function secs(html){const d=document.createElement("div"); d.innerHTML=html; const S={}, sum={}; d.querySelectorAll("details.fsec").forEach(s=>{s.open=true; S[s.dataset.sec]=s.outerHTML; const x=s.querySelector("summary .fss"); if(x&&x.textContent.trim()) sum[s.dataset.sec]=x.innerHTML;}); const at=d.querySelector(".fattn"); return {S,sum,attn:at?at.outerHTML:""};}
- /* « En bref » : une ligne par rubrique des autres onglets ; son nom mène à la rubrique */
- const BREF=[["prix","Le prix","prix"],["poids","Ce qui pèse","calc"],["loyer","Loyer et demande","calc"],["calc","Le calcul","calc"],["traj","Trajets","quartier"],["vie","Vie de quartier","quartier"],["risq","Risques","quartier"],["suivi","Suivi de l'achat","achat"]];
- const brefB=sum=>{const R=BREF.filter(([k])=>sum[k]); return R.length?`<div class="v2sec v3bref"><h3>En bref</h3><dl class="v3brefl">${R.map(([k,l,tab])=>`<div><dt><button type="button" class="v3lnk" data-v2ft="${tab}" data-v3sec="${k}">${l}</button></dt><dd>${sum[k]}</dd></div>`).join("")}</dl></div>`:"";};
+ /* ---------- la fiche, en pleine page et en questions (src/js/48b-questions.js, refonte du 14 novembre 2026) ----------
+    En tête : la photo, le titre, trois chiffres (rendement, cash-flow, budget) et ce qu'il faut regarder ; puis les questions
+    repliées, chacune avec sa ligne de faits et, ouverte, ses rubriques ; en bas, Suivre et Voir l'annonce. Pas de conclusion :
+    des faits et leur point de comparaison. Les anciens onglets (data-v2ft, liens des rubriques) mènent à la question qui les contient. */
+ const FTQ={bien:"achete",prix:"cher",calc:"argent",quartier:"ou",achat:"achat"};
+ const FQO={sel:null,o:new Set()};   /* questions ouvertes de la fiche affichée (gardées quand elle se redessine) */
+ const attnL=h=>{const d=document.createElement("div"); d.innerHTML=h||""; return [...d.querySelectorAll("li.bad,li.warn")].map(li=>[li.className,li.innerHTML]).sort((a,b)=>(a[0]==="bad"?0:1)-(b[0]==="bad"?0:1));};
+ const chiffres=(x,hc)=>`<div class="v3chf">${[["Rendement",hc?"var(--muted)":cv(colIrr(x.irr)),pctS(x.irr),hc?"indicatif":"par an, sur 15 ans"],["Cash-flow",Math.round(x.cf)===0?"var(--fg)":cfC(x.cf),Math.round(x.cf)===0?"0 €":sgn(x.cf),`par mois${H.assoc.length>1?", à "+H.assoc.length:""}`],["Budget","var(--fg)",keur(x.cost),"tout compris"]].map(([l,c,v,s])=>`<div><span>${l}</span><b class="mono" style="color:${c}">${v}</b><small>${s}</small></div>`).join("")}</div>`;
+ /* « Combien ça coûte et rapporte ? » : le scénario affiché, les trois rendements, et à partir de quand on est gagnant si l'on revend */
+ const argentX=(x,z)=>{const g=typeof gainTxt==="function"?gainTxt(x):""; return `${scnRow()}${z&&z.prudent!=null?`<p class="v2sub" style="margin:0">Rendement selon les hypothèses : prudentes ${pctS(z.prudent)}, centrales ${pctS(z.central??x.irr)}, favorables ${pctS(z.favorable)}.</p>`:""}${g?`<div class="v3gain"><b>Si on revend : ${g}</b><small>Gagnant : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et tout ce qu'on a sorti de notre poche (apport et mois négatifs).</small></div>`:""}`;};
  function bienOfSel(s){const [k,...r]=s.split("|"); if(k==="b"){const b=BIENS.find(x=>x.id===r[0]); return b?{b,kind:"b"}:null;}
   if(k==="v"){const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a) return null; const ex=bienOf(VTURL+suf); return {b:Object.assign(venteBien(ck,a),{kind:"v",suf}),a,ck,suf,ex:ex&&!isOut(ex)?ex:null,kind:"v"};}
   return null;}
@@ -748,68 +759,76 @@
     :`<p class="v2sub" style="margin:0">La grille de visite (${nT} points, documents à demander) se remplit à deux sur un bien suivi.</p><div><button type="button" class="v2btn" data-v2star="${esc(b.ville)}|${esc(b.suf||"")}">☆ Suivre ce bien</button></div>`}</div>`;}
  function ficheBien(sel){const R=bienOfSel(sel); if(!R) return null; const b=R.b, id=R.kind==="b"?"b"+b.id:sel, r=calcBien(b), x=r.x, z=irr3(x)||{}, t=r.t, fx=ficx(R.kind==="v"?R.suf:(bienSuf(b)||""))||{};
   const {S,sum,attn}=secs(bienFicheBody(b,{noHead:true}));
-  const lo=-4,hi=12,p=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100)), c=cv(colIrr(x.irr)), [bc,bt]=bank(x.ratio);
-  const ph=R.kind==="v"?(R.a[4]?photoUrl(R.a[3],R.a[4],960,540):""):bienPhoto(b,960,540), bb=R.kind==="b"?b:R.ex, on=!!bb;
+  const [bc,bt]=bank(x.ratio), ph=R.kind==="v"?(R.a[4]?photoUrl(R.a[3],R.a[4],960,540):""):bienPhoto(b,960,540), bb=R.kind==="b"?b:R.ex, on=!!bb;
   const [me,oth]=people(), dpe=b.dpe||fx.dpe;
   const tit=String(R.kind==="b"?(b.titre||"Bien"):b.titre).split(" · ")[0], ann=R.kind==="v"?R.a[1]:b.quartier, qn=t?t.name:b.quartier||"";
-  const chips=`${bc!=="p-ok"?`<span class="v2pill ${bc==="p-warn"?"warn":"bad"}" title="part des revenus prise par les crédits">Banque : ${bt.toLowerCase()} · ${Math.round(x.ratio*100)} % des revenus</span>`:""}${dpe?`<span class="v2pill ${"FG".includes(dpe)?"bad":dpe==="E"?"warn":""}">DPE ${dpe}${dpe==="G"?" · location interdite":dpe==="F"?" · interdite en 2028":dpe==="E"?" · interdite en 2034":""}</span>`:""}${R.kind==="v"?ficheBadges(R.suf,true)||"":""}`;
   const psuf=R.kind==="v"?R.suf:(typeof bienSuf==="function"?bienSuf(b)||"":""), pf=psuf?ficheOf(b.ville,psuf):null, pn=pf&&pf.ph?pf.ph.length:0, hc=!!psuf&&horsCalcul(psuf);
-  const head=`<div class="v2fhd">${ph?`<button type="button" class="v2fthb" data-v2photos="${esc(b.ville)}|${esc(psuf)}" aria-label="Voir les photos en grand"><img class="v2fth" src="${esc(ph)}" alt="" referrerpolicy="no-referrer" onerror="this.closest('.v2fthb').remove()"><span class="v2fthn">${pn>1?`${pn} photos`:"agrandir"}</span></button>`:""}<div class="v2fhdt"><h2 class="v2ft">${keur(+b.prix)} · ${esc(tit)}</h2><p class="v2sub">${esc(cityName(b.ville))}${qn?" · quartier "+esc(qn):""}${ann&&qn&&ann!==qn?` <span title="nom du secteur dans l'annonce">(« ${esc(ann)} » dans l'annonce)</span>`:""} · ${eur(+b.prix/(+b.surface||1))}/m² ${R.kind==="v"?_vuBadgesF("v",R.ck,R.suf):""}</p></div></div>
-   <div class="v2kl"><span><b class="mono" style="color:${hc?"var(--muted)":c}">${pctS(x.irr)}</b> 15 ans${hc?" (indicatif)":""}</span><span><b class="mono" style="color:${cfC(x.cf)}">${sgn(x.cf)}</b>/mois</span>${R.kind==="v"?`<button type="button" class="v2klst" data-v2star="${R.ck}|${esc(R.suf)}" aria-pressed="${on}" aria-label="${on?"Suivi : ne plus suivre ce bien":"Suivre ce bien"}">${on?"★ Suivi":"☆ Suivre"}</button>`:""}</div>
-   <div class="v2kp v2kp3"><div class="v2k"><span>Rendement 15 ans · ${hc?"indicatif":scn()}</span><b style="color:${hc?"var(--muted)":c}">${pctS(x.irr)}</b>${hc?`<small>le calcul de l'outil ne s'applique pas à ce bien (voir « À vérifier »)</small>`:`<div class="v2bigbar" aria-hidden="true">${z.prudent!=null?`<i style="left:${p(z.prudent)}%;width:${p(z.favorable)-p(z.prudent)}%;background:${c}"></i>`:""}<b style="left:${p(x.irr)}%;background:${c}"></b></div><small>prudent ${pctS(z.prudent)} · favorable ${pctS(z.favorable)}</small>`}</div>
-    <div class="v2k"><span>Cash-flow${H.assoc.length>1?" à "+H.assoc.length:""}</span><b style="color:${cfC(x.cf)}">${sgn(x.cf)}</b><small>par mois · loyer ${eur(x.rentHC)} HC</small></div><div class="v2k"><span>Mensualité</span><b>${eur(x.mens)}</b><small>budget ${keur(x.cost)} tout compris</small></div></div>${hc?"":scnRow()}
-   <p class="v2sub v2pos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>${hasLL(bb)||posQ(fx)===0?'<circle cx="12" cy="10" r="2.6"/>':""}</svg>Sur la carte : ${esc(posTxt(R.kind==="v"||(b.url&&feed().some(o=>o.url===b.url))?fx:null,hasLL(bb),R.kind==="b"))}${!onMap()&&selPos(sel).f?` <button type="button" class="v2lnk v3onmap" data-v3onmap>Voir sur la carte</button>`:""}</p>
-   ${chips?`<div class="v2chips">${chips}</div>`:""}
-   <div class="v2bar">${R.kind==="v"?`<button type="button" class="v2btn${on?"":" pri"}" data-v2star="${R.ck}|${esc(R.suf)}" aria-pressed="${on}">${on?"★ Suivi, dans Nos biens":"☆ Suivre ce bien"}</button>`:`${stPill(b)}<button type="button" class="v2btn sm" data-unshort="${esc(b.id)}">Ne plus suivre</button>`}${b.url?`<a class="v2btn sm" href="${esc(b.url)}" target="_blank" rel="noopener">Voir l'annonce ↗</a>`:""}${bb?`<button type="button" class="v2btn sm" data-fiche="${esc(bb.id)}">Fiche à emporter</button>`:""}</div>
-   ${bb?`<div class="v2sec v2adeux"><h3>À deux</h3><div class="v2vrow"><b>${esc(me||"Vous")}</b>${me?voteBtns(bb,me):`<button type="button" class="v2btn sm" data-v2tab="reglages">Votre prénom, dans Réglages</button>`}</div>${oth.map(o=>`<div class="v2vrow"><b>${esc(o)}</b>${voteTxt(bb,o)}</div>`).join("")}</div>`:""}`;
-  const nd=typeof docsN==="function"?docsN(b):0, dl0=nd?`<p class="v2doclk"><button type="button" class="v2btn sm" data-v2ft="achat" data-v2focus="v2docs">Documents à demander avant une offre (${nd})</button></p>`:"";
-  const extra={prix:prixNuage(b,t),achat:offre(b,id,bb)+(nd?docsBlock(b,bb):"")+visite(b,id,bb),bien:attn+brefB(sum)+dl0,calc:assocDetail(x)};
-  return {title:`${keur(+b.prix)} · ${cityName(b.ville)}`,city:b.ville,head,S,extra,share:`${keur(+b.prix)} · ${tit} · ${cityName(b.ville)}${qn?" ("+qn+")":""} : ${pctS(x.irr)} sur 15 ans, ${sgn(x.cf)} par mois`};}
+  const hero=ph?`<button type="button" class="v3fph" data-v2photos="${esc(b.ville)}|${esc(psuf)}" aria-label="Voir les photos en grand"><img src="${esc(ph)}" alt="" referrerpolicy="no-referrer" onerror="this.closest('.v3fph').remove()"><span class="v2fthn">${pn>1?`${pn} photos`:"agrandir"}</span></button>`:"";
+  const badges=R.kind==="v"?ficheBadges(R.suf,true)||"":"";
+  const head=`<h2 class="v2ft">${keur(+b.prix)} · ${esc(tit)}</h2><p class="v2sub">${esc(cityName(b.ville))}${qn?" · quartier "+esc(qn):""}${ann&&qn&&ann!==qn?` <span title="nom du secteur dans l'annonce">(« ${esc(ann)} » dans l'annonce)</span>`:""} · ${eur(+b.prix/(+b.surface||1))}/m²${dpe?" · DPE "+esc(dpe):""} ${R.kind==="v"?_vuBadgesF("v",R.ck,R.suf):""}</p>${badges?`<div class="v2chips">${badges}</div>`:""}`;
+  const nd=typeof docsN==="function"?docsN(b):0;
+  const deux=bb?`<div class="v2sec v2adeux"><h3>À deux</h3><div class="v2vrow"><b>${esc(me||"Vous")}</b>${me?voteBtns(bb,me):`<button type="button" class="v2btn sm" data-v2tab="reglages">Votre prénom, dans Réglages</button>`}</div>${oth.map(o=>`<div class="v2vrow"><b>${esc(o)}</b>${voteTxt(bb,o)}</div>`).join("")}</div>`:"";
+  const suivi=bb?`<div class="v2bar">${R.kind==="b"?stPill(b):""}<button type="button" class="v2btn sm" data-fiche="${esc(bb.id)}">Fiche à emporter</button>${R.kind==="b"?`<button type="button" class="v2btn sm" data-unshort="${esc(b.id)}">Ne plus suivre</button>`:""}</div>`:"";
+  const pos=`<p class="v2sub v2pos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>${hasLL(bb)||posQ(fx)===0?'<circle cx="12" cy="10" r="2.6"/>':""}</svg>Sur la carte : ${esc(posTxt(R.kind==="v"||(b.url&&feed().some(o=>o.url===b.url))?fx:null,hasLL(bb),R.kind==="b"))}${!onMap()&&!PH()&&selPos(sel).f?` <button type="button" class="v2lnk v3onmap" data-v3onmap>Voir sur la carte</button>`:""}</p>`;
+  const extra={cher:prixNuage(b,t),
+   argent:(hc?`<p class="v2sub" style="margin:0">Le calcul de l'outil ne s'applique pas à ce bien : les chiffres sont indicatifs (voir « Qu'est-ce qui peut mal tourner ? »).</p>`:argentX(x,z))+`<p style="margin:0">Mensualité <b class="mono">${eur(x.mens)}</b> · loyer <b class="mono">${eur(x.rentHC)}</b> hors charges · banque : <span class="v2pill ${bc==="p-ok"?"ok":bc==="p-warn"?"warn":"bad"}">${bt.toLowerCase()}</span> <span class="v2sub">(crédits : ${Math.round(x.ratio*100)} % des revenus)</span></p>`+assocDetail(x),
+   risques:attn,
+   ou:pos+(t?`<div><button type="button" class="v2btn sm" data-v2open="q|${esc(b.ville)}|${esc(t.code)}">Fiche du quartier ${esc(t.name)} ›</button></div>`:""),
+   achat:deux+suivi+offre(b,id,bb)+(nd?docsBlock(b,bb):"")+visite(b,id,bb)};
+  const actions=`${R.kind==="v"&&!on?`<button type="button" class="v2btn pri" data-v2star="${R.ck}|${esc(R.suf)}" aria-pressed="false">☆ Suivre ce bien</button>`:`<button type="button" class="v2btn v3suivi" data-v3go="achat" aria-label="Suivi : ouvrir « Si on y va ? »">★ Suivi · ${esc(bb&&bb.statut||"à voir")}</button>`}${b.url?`<a class="v2btn" href="${esc(b.url)}" target="_blank" rel="noopener">Voir l'annonce ↗</a>`:""}`;
+  return {kind:"v",obj:b,title:`${keur(+b.prix)} · ${cityName(b.ville)}`,city:b.ville,hero,head,x,hc,attn,S,sum,extra,actions,share:`${keur(+b.prix)} · ${tit} · ${cityName(b.ville)}${qn?" ("+qn+")":""} : ${pctS(x.irr)} sur 15 ans, ${sgn(x.cf)} par mois`};}
  /* documents à demander (24e-documents.js) : cochés à deux sur un bien suivi, mêmes cases que la grille de visite */
  function docsBlock(b,bb){const G=docsList(b), ck=bb?((bb.visite||{}).check||{}):{}, all=G.flatMap(g=>g[1]), n=all.length, got=all.filter(([k])=>ck[k]==="oui").length, ko=all.filter(([k])=>ck[k]==="non").length;
   return `<div class="v2sec v2docs" id="v2docs" tabindex="-1"><h3>Documents à demander</h3><p class="v2sub" style="margin:0">${bb?`${got} reçu${got>1?"s":""} sur ${n}${ko?` · <b style="color:var(--bad)">${ko} problème${ko>1?"s":""}</b> (grille de visite)`:""} · cochez un document reçu, pour ${nous()}`:`D'après l'annonce et le registre des copropriétés. Sur un bien suivi, vous les cochez à deux.`}</p>
    ${G.map(([tt,L])=>`<h4 class="fh4">${tt}</h4><ul class="v2docl">${L.map(([k,l,w])=>`<li${ck[k]==="non"?' class="ko"':""}>${bb?`<button type="button" class="v2dck" data-v2doc="${esc(bb.id)}|${k}" aria-pressed="${ck[k]==="oui"}" aria-label="Reçu : ${esc(l)}"></button>`:'<span class="v2dbul" aria-hidden="true"></span>'}<span><b>${l}</b>${w?`<small>${w}</small>`:""}</span></li>`).join("")}</ul>`).join("")}</div>`;}
  const dl=L=>`<dl class="v2dl">${L.filter(Boolean).map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>`;
- function ficheQV(sel){const [k,ck,code]=sel.split("|");
-  if(k==="q"){const t=IR[ck]&&IR[ck].list.find(v=>v.code===code); if(!t) return null; const {S,attn}=secs(quartierFiche(t)); let x=null; try{x=t.type==="H"?(QX[t.ck+t.i]||calcIris(t)):null;}catch(_){}
-   const A=feed().filter(o=>o.ck===ck&&o.t&&o.t.code===code), m=A.filter(pass).length;
-   const kp=x&&x.irr!=null?`<div class="v2kp v2kp3"><div class="v2k"><span>Rendement 15 ans · ${scn()}</span><b style="color:${cv(colIrr(x.irr))}">${pctS(x.irr)}</b><small>${(z=>`prudent ${pctS(z.prudent)} · favorable ${pctS(z.favorable)}`)(cz(x))}</small></div><div class="v2k"><span>Cash-flow</span><b style="color:${cfC(x.cf)}">${sgn(x.cf)}</b><small>par mois</small></div><div class="v2k"><span>Budget</span><b>${keur(x.cost)}</b><small>tout compris</small></div></div>${scnRow()}`:"";
-   const bref=`<div class="v2sec"><h3>En bref</h3>${dl([["Annonces pour nos critères",A.length?`<b>${m}</b> sur ${A.length} dans le quartier`:"aucune annonce relevée dans le quartier"],x&&x.irr!=null&&["Loyer hors charges",`${eur(x.rentHC)} par mois`]])}</div>`;
-   const kl=x&&x.irr!=null?`<div class="v2kl"><span><b class="mono" style="color:${cv(colIrr(x.irr))}">${pctS(x.irr)}</b> 15 ans</span><span><b class="mono" style="color:${cfC(x.cf)}">${sgn(x.cf)}</b>/mois</span><span>budget <b class="mono">${keur(x.cost)}</b></span></div>`:"";
-   return {title:`${t.name} · ${cityName(ck)}`,head:`<h2 class="v2ft">${esc(t.name)}</h2><p class="v2sub">Quartier de ${esc(cityName(ck))}${x&&x.irr!=null?` · ${tyl().toLowerCase()} type de ${H.surface} m²`:""}</p>${kl}${kp}`,S,extra:{bien:bref+attn},city:ck,share:`Quartier ${t.name} (${cityName(ck)})${x&&x.irr!=null?` : ${pctS(x.irr)} sur 15 ans pour ${tyLow()==="studio"?"un studio":"un "+tyl()} type`:""}`};}
-  if(k==="c"){const c=C.find(v=>v.k===ck); if(!c) return null; const {S,attn}=secs(villeFiche(c)); const x=V.tous?Object.assign({},calcVille(c),stats(ck)):calcVille(c), z=cz(x), [m,n]=cityCnt(ck);
-   const bref=`<div class="v2sec"><h3>En bref</h3>${dl([["Annonces pour nos critères",n?`<b>${m}</b> sur ${n}`:"pas d'annonces relevées"],[`Prix d'${tyLow()==="studio"?"un studio":"un "+tyl()} type${x.qt&&!V.tous?" (quartier du milieu)":""}`,`${keur(x.bien)} pour ${H.surface} m² (${nf(x.bien/H.surface)} €/m²)`],["Loyer hors charges",`${eur(x.rentHC)} par mois`],["Étudiants",nf(c.students)],["Paris en train",hm(c.paris)],c.note&&["À savoir",esc(c.note)]])}</div>`;
-   return {title:c.name,share:`${c.name} : ${pctS(x.irr)} sur 15 ans pour ${tyLow()==="studio"?"un studio":"un "+tyl()} type`,head:`<h2 class="v2ft">${esc(c.name)}</h2><div class="v2kl"><span><b class="mono" style="color:${cv(colIrr(x.irr))}">${pctS(x.irr)}</b> 15 ans</span><span><b class="mono" style="color:${cfC(x.cf)}">${sgn(x.cf)}</b>/mois</span><span>budget <b class="mono">${keur(x.cost)}</b></span></div><div class="v2kp v2kp3"><div class="v2k"><span>Rendement 15 ans · ${scn()}</span><b style="color:${cv(colIrr(x.irr))}">${pctS(x.irr)}</b><small>${V.tous?`médiane de ${x.n} annonces`:`prudent ${pctS(z.prudent)} · favorable ${pctS(z.favorable)}`}</small></div><div class="v2k"><span>Cash-flow</span><b style="color:${cfC(x.cf)}">${sgn(x.cf)}</b><small>par mois</small></div><div class="v2k"><span>Budget</span><b>${keur(x.cost)}</b><small>tout compris</small></div></div>${scnRow()}<p class="v2sub v2fnote" style="margin:0">${V.tous?`Médiane des ${x.n} annonces de la ville, tous types ; les rubriques ci-dessous sont pour ${tyLow()==="studio"?"un studio":"un "+tyl()} type.`:x.qt?`Quartier du milieu : ${esc(x.qt.name)}. La moitié des ${typl()} vendus le sont dans des quartiers au rendement plus haut, l'autre moitié plus bas ; la couleur de la ville est celle de ce quartier.`:`Moyenne d'${tyLow()==="studio"?"un studio":"un "+tyl()} type dans la ville.`}</p>`,S,extra:{bien:bref+attn}};}
+ function ficheQV(sel){const [k,ck,code]=sel.split("|"), un=tyLow()==="studio"?"un studio":"un "+tyl();
+  if(k==="q"){const t=IR[ck]&&IR[ck].list.find(v=>v.code===code); if(!t) return null; const {S,sum,attn}=secs(quartierFiche(t)); let x=null; try{x=t.type==="H"?(QX[t.ck+t.i]||calcIris(t)):null;}catch(_){}
+   const A=feed().filter(o=>o.ck===ck&&o.t&&o.t.code===code), m=A.filter(pass).length, ok=x&&x.irr!=null;
+   const top=`<p class="v2sub" style="margin:0">Annonces pour nos critères : ${A.length?`<b>${m}</b> sur ${A.length} dans le quartier`:"aucune annonce relevée dans le quartier"}.</p>`;
+   return {kind:"q",obj:t,title:`${t.name} · ${cityName(ck)}`,head:`<h2 class="v2ft">${esc(t.name)}</h2><p class="v2sub">Quartier de ${esc(cityName(ck))}${ok?` · chiffres d'${un} type de ${H.surface} m²`:""}</p>`,x:ok?x:null,top,attn,S,sum,
+    extra:{argent:ok?argentX(x,cz(x)):"",risques:attn},city:ck,share:`Quartier ${t.name} (${cityName(ck)})${ok?` : ${pctS(x.irr)} sur 15 ans pour ${un} type`:""}`};}
+  if(k==="c"){const c=C.find(v=>v.k===ck); if(!c) return null; const {S,sum,attn}=secs(villeFiche(c)); const x=V.tous?Object.assign({},calcVille(c),stats(ck)):calcVille(c), [m,n]=cityCnt(ck);
+   const note=V.tous?`Médiane des ${x.n} annonces de la ville, tous types ; les rubriques sont pour ${un} type.`:x.qt?`Chiffres du quartier du milieu, ${esc(x.qt.name)} : la moitié des ${typl()} vendus le sont dans des quartiers au rendement plus haut, l'autre moitié plus bas.`:`Moyenne d'${un} type dans la ville.`;
+   const QL=IR[ck]?IR[ck].list.filter(q=>q.type==="H").map(q=>{let y=null; try{y=QX[q.ck+q.i]||calcIris(q);}catch(_){} return {q,irr:y?y.irr:null};}).sort((a,b)=>(b.irr??-99)-(a.irr??-99)):[];
+   const quart=QL.length?`<div><button type="button" class="v2btn sm" data-v3carte="${ck}">Voir les quartiers sur la carte</button></div><div class="v3ql">${QL.map(({q,irr})=>`<button type="button" data-v2open="q|${ck}|${esc(q.code)}"><span>${esc(q.name)}</span><b class="mono" style="color:${cv(colIrr(irr))}">${pctS(irr)}</b>${CHEVR}</button>`).join("")}</div>`:"";
+   const top=n?`<button type="button" class="v2btn pri v3cta" data-v2city="${ck}">${m?`Voir les ${m} annonce${m>1?"s":""} pour nos critères`:`Voir les ${n} ${n>1?typl().toLowerCase():tyl().toLowerCase()} à vendre (aucun pour nos critères)`}</button>`:`<p class="v2sub" style="margin:0">Aucun ${tyl().toLowerCase()} relevé à vendre ce soir : les chiffres viennent des ventes réelles et des loyers de la ville.</p>`;
+   return {kind:"c",obj:c,title:c.name,share:`${c.name} : ${pctS(x.irr)} sur 15 ans pour ${un} type`,head:`<h2 class="v2ft">${esc(c.name)}</h2><p class="v2sub">${V.tous?"Tous types, médiane des annonces":`Chiffres d'${un} type de ${H.surface} m²${x.qt?`, quartier du milieu : ${esc(x.qt.name)}`:""}`}${c.note?" · "+esc(c.note):""}</p>`,x,top,attn,S,sum,city:ck,
+    extra:{argent:`<p class="v2sub" style="margin:0">${note}</p>`+argentX(x,cz(x)),risques:attn,quartiers:quart}};}
   return null;}
+ function qGo(k,focus){const fe=$("v2fiche"), q=fe&&fe.querySelector(`details.v3q[data-v3q="${k}"]`); if(!q) return; FQO.o.add(k); q.open=true;
+  const hh=(fe.querySelector(".v2fh")||{}).offsetHeight||0, fo=focus&&$(focus);
+  if(fo){fo.scrollIntoView({block:"center"}); fo.focus({preventScroll:true}); return;}
+  fe.scrollTop=Math.max(0,q.offsetTop-hh-8); const su=q.querySelector("summary"); if(su) su.focus({preventScroll:true});}
  function fiche(){const el=$("v2fiche"); if(!V.sel){el.hidden=true; el.innerHTML=""; return;}
   const F=V.sel[0]==="v"||V.sel[0]==="b"?ficheBien(V.sel):ficheQV(V.sel); if(!F){V.sel=null; el.hidden=true; return;} LASTF=F;
-  const tabs=FT.filter(([k,,ss])=>ss.some(s=>F.S[s])||(F.extra[k]&&F.extra[k].length)); let cur=tabs.some(t=>t[0]===V.ftab)?V.ftab:(tabs[0]||["bien"])[0];
-  const g=FT.find(t=>t[0]===cur)||FT[0], zone=V.sel[0]==="c"||V.sel[0]==="q";
-  const gp=PH()&&onMap(), half=gp&&!V.fbig; el.dataset.half=half?(V.fmini?"2":"1"):"0";   /* 2 : réduite à son bandeau, la carte au-dessus */   /* téléphone, sur la carte : la fiche s'ouvre sur le bas de l'écran, l'annonce reste visible au-dessus */
-  el.hidden=false; el.innerHTML=`<div class="v2fh${gp?" v2fhg":""}">${gp?`<button type="button" class="v2fgrip" data-v2fgrip aria-label="${half?"Agrandir la fiche":"Réduire la fiche"}" aria-expanded="${!half}"><i></i></button>`:""}<button type="button" class="v2btn sm" data-v2close aria-label="${!PH()&&onMap()?"Fermer la fiche et revenir à la liste":"Fermer la fiche"}">${PH()?(half?"Fermer":"Retour"):onMap()?"‹ Liste":"×"}</button><b>${esc(F.title)}</b>${(()=>{const L=/^[vb]\|/.test(V.sel)?navList():[], i=L.indexOf(V.sel); return i>=0&&L.length>1?`<span class="v2nav"><button type="button" class="v2btn sm" data-v2nav="-1" aria-label="Annonce précédente"${i?"":" disabled"}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button><span class="v2sub mono">${i+1}/${L.length}</span><button type="button" class="v2btn sm" data-v2nav="1" aria-label="Annonce suivante"${i<L.length-1?"":" disabled"}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></span>`:"";})()}<button type="button" class="v2btn sm v2lien" data-v2lien aria-label="Partager cette fiche" title="Partager"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>
-   <div class="v2fb">${F.head}<div class="v2tabs2" role="group" aria-label="Rubriques de la fiche">${tabs.map(([k,l])=>{const t=zone&&k==="bien"?"En bref":zone&&k==="achat"?"Sources":l, c=t.replace(/^L(e |')/,""); return `<button type="button" data-v2ft="${k}" aria-pressed="${k===cur}">${c[0].toUpperCase()+c.slice(1)}</button>`;}).join("")}</div>
-   ${F.extra[cur]||""}${g[2].map(s=>F.S[s]||"").join("")}</div>`;
+  if(FQO.sel!==V.sel){FQO.sel=V.sel; FQO.o=new Set();}
+  const AL=attnL(F.attn); let QS={}; try{QS=typeof fqSum==="function"?fqSum(F.kind,F.obj):{};}catch(_){}
+  const Q=(typeof fqList==="function"?fqList(F.kind):[]).map(([k,l,ss])=>[k,l,F.kind==="c"&&k==="marche"?ss.filter(s=>s!=="ann"):ss]);
+  const sumDe=(k,ss)=>{if(k==="risques"){const r=AL.length?`${AL.length} point${AL.length>1?"s":""} à regarder`:"rien de bloquant repéré"; return QS[k]?`${r} · ${QS[k]}`:r;} return QS[k]||ss.map(s=>F.sum[s]).filter(Boolean).slice(0,2).join(" · ");};
+  const qs=Q.map(([k,l,ss])=>{const body=(F.extra[k]||"")+ss.map(s=>F.S[s]||"").join(""); if(!body.trim()) return ""; const sm=sumDe(k,ss);
+   return `<details class="v3q" data-v3q="${k}"${FQO.o.has(k)?" open":""}><summary><span><b>${l}</b>${sm?`<small>${sm}</small>`:""}</span><svg class="v3chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary><div class="v3qb">${body}</div></details>`;}).join("");
+  const att=AL.length?`<div class="v3att"><h3>À regarder</h3><ul>${AL.slice(0,3).map(([c,tx])=>`<li class="${c}">${tx}</li>`).join("")}</ul>${AL.length>3?`<button type="button" class="v2lnk" data-v3go="risques">et ${AL.length-3} autre${AL.length>4?"s":""} : « Qu'est-ce qui peut mal tourner ? »</button>`:""}</div>`:"";
+  const L=/^[vb]\|/.test(V.sel)?navList():[], i=L.indexOf(V.sel), nav=i>=0&&L.length>1?`<span class="v2nav"><button type="button" class="v2btn sm" data-v2nav="-1" aria-label="Annonce précédente"${i?"":" disabled"}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button><span class="v2sub mono">${i+1} sur ${L.length}</span><button type="button" class="v2btn sm" data-v2nav="1" aria-label="Annonce suivante"${i<L.length-1?"":" disabled"}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></span>`:"";
+  el.dataset.half="0"; el.dataset.kind=F.kind; el.hidden=false;
+  el.innerHTML=`<div class="v2fh"><button type="button" class="v2btn sm v3ret" data-v2close aria-label="${!PH()&&onMap()?"Fermer la fiche et revenir à la liste":"Retour"}">${CHEVL}<span>${PH()?"Retour":onMap()?"Liste":"Fermer"}</span></button><b>${esc(F.title)}</b>${nav}<button type="button" class="v2btn sm v2lien" data-v2lien aria-label="Partager cette fiche" title="Partager"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button></div>
+   <div class="v2fb">${F.hero||""}<div class="v3fhead">${F.head}${F.x&&F.x.irr!=null?chiffres(F.x,F.hc):""}${F.top||""}${att}</div>
+   <div class="v3qs">${qs}</div>${F.S.src?`<div class="v3src">${F.S.src}</div>`:""}<p class="v2sub v3disc">Estimations faites à partir de sources publiques : ce n'est ni un conseil financier, ni un conseil fiscal.</p></div>${F.actions?`<div class="v3fact">${F.actions}</div>`:""}`;
   if(M) requestAnimationFrame(()=>M.resize());}
  /* l'écran d'avant la fiche : ville et vue de la liste, défilement, cadrage de la carte ; rendu à la fermeture */
  let RET=null;
- /* tirer la fiche : vers le bas, plein écran › demi-écran › bandeau › fermée ; vers le haut, l'inverse ; hors carte, vers le bas : la carte */
- function fStep(dir){if(!V.sel) return;
-  if(!onMap()){if(dir>0) showOnMap(); return;}
-  if(dir>0){if(V.fbig) V.fbig=false; else if(!V.fmini) V.fmini=true; else return closeSel();}
-  else{if(V.fmini) V.fmini=false; else if(!V.fbig) V.fbig=true; else return;}
-  const sc=$("v2fiche").scrollTop; fiche(); if(!V.fbig) $("v2fiche").scrollTop=0; else $("v2fiche").scrollTop=sc; requestAnimationFrame(()=>{padSync(); if(!V.fbig&&V.sel) flyAd(V.sel);});}
- /* voir l'annonce sur la carte depuis sa fiche (vue Liste, Nos biens) : la carte s'ouvre sur elle, fiche en demi-écran ; fermer ramène à l'écran d'avant */
- function showOnMap(){if(!V.sel) return; V.tab="explorer"; V.view="carte"; V.fbig=false; V.fmini=false; FLYP=/^[vb]\|/.test(V.sel)?V.sel:null; save(); show();}
+ /* voir l'annonce sur la carte depuis sa fiche (vue Liste, Nos biens) : la carte s'ouvre sur elle, fiche à côté ; fermer ramène à l'écran d'avant */
+ function showOnMap(){if(!V.sel) return; V.tab="explorer"; V.view="carte"; FLYP=/^[vb]\|/.test(V.sel)?V.sel:null; save(); show();}
  function retSnap(){const ml=$("v2mlist"), mr=ml&&ml.querySelector(".v2mrows"); RET={tab:V.tab,view:V.view,city:V.city,obj:V.obj,vue:V.vue,ls:mr?mr.scrollTop:0,ps:$("v3liste").scrollTop,pb:($("v2p-biens")||{}).scrollTop||0,
    cam:onMap()&&M&&MREADY?{center:M.getCenter(),zoom:M.getZoom(),pitch:M.getPitch(),bearing:M.getBearing()}:null};}
- function closeSel(){const r=RET; RET=null; V.sel=null; V.fmini=false;
+ function closeSel(){const r=RET; RET=null; V.sel=null;
   if(r&&(r.tab!==V.tab||r.view!==V.view)){V.tab=r.tab; V.view=r.view; V.city=r.city; LCITY=r.city; V.obj=r.obj; V.vue=r.vue; save(); show();   /* ouverte depuis la liste ou Nos biens, vue sur la carte : retour là-bas */
    requestAnimationFrame(()=>{$("v3liste").scrollTop=r.ps; const pb=$("v2p-biens"); if(pb) pb.scrollTop=r.pb;}); return;}
   fiche();
   if(r&&V.tab==="explorer"){if(r.city!==V.city){V.city=r.city; LCITY=r.city; save(); reperes(r.city);} V.obj=r.obj; V.vue=r.vue;}
   if(onMap()){mapList(); scope(); drawMap(); if(r&&r.cam&&M&&MREADY) camAuto(Object.assign({duration:700},r.cam),"easeTo");} else paint(V.tab);
   if(r) requestAnimationFrame(()=>{const mr=$("v2mlist").querySelector(".v2mrows"); if(mr) mr.scrollTop=r.ls; $("v3liste").scrollTop=r.ps; const pb=$("v2p-biens"); if(pb) pb.scrollTop=r.pb;});}
- function openSel(s,keepTab){if(!V.sel) retSnap();if(GPOP){GPOP.remove(); GPOP=null;}if(V.tous&&s[0]==="v"){const o=feed().find(x=>key(x)===s); if(o&&o.ty!==H.type) setType(o.ty,true);} const nw=V.sel!==s; V.sel=s; if(nw&&!NAVK){V.fbig=false; V.fmini=false;} NAVK=false; FLYP=!onMap()&&(s[0]==="v"||s[0]==="b")?s:null; if(!keepTab) V.ftab="bien"; fiche(); if(onMap()){mapList(); drawMap();} else paint(V.tab); $("v2fiche").scrollTop=0; if(PH()) padSync(); flyAd(s);}
+ function openSel(s,keepTab){if(!V.sel) retSnap();if(GPOP){GPOP.remove(); GPOP=null;}if(V.tous&&s[0]==="v"){const o=feed().find(x=>key(x)===s); if(o&&o.ty!==H.type) setType(o.ty,true);} V.sel=s; NAVK=false; FLYP=!onMap()&&(s[0]==="v"||s[0]==="b")?s:null; fiche(); if(onMap()){mapList(); drawMap();} else paint(V.tab); $("v2fiche").scrollTop=0; if(!PH()) flyAd(s);}   /* téléphone : la fiche couvre la carte, qui ne bouge pas derrière (elle garde son cadrage pour le retour) */
  /* ---------- d'une annonce à l'autre, et lien vers une fiche ----------
     Précédente / suivante : dans l'ordre de la liste affichée (carte, Annonces ou Nos biens), sans fermer la fiche ; boutons de l'en-tête,
     glisser à gauche ou à droite sur le téléphone, flèches du clavier. Partager : feuille de partage du téléphone (sinon lien copié) ;
@@ -878,7 +897,7 @@
     la couche retire son entrée (BKSKIP : le retour qu'on provoque alors ne referme rien). Entrée devenue inutile au milieu : « x »,
     sautée au retour suivant. */
  const BK=[]; let BKSKIP=0, BKQ=0;
- const BKON={tab:()=>V.tab!=="explorer"||V.view!=="carte",sel:()=>!!V.sel,dlg:()=>!!document.querySelector(".v2dlg"),lb:()=>!!document.querySelector(".v2lb")};
+ const BKON={tab:()=>V.tab!=="explorer"||V.view!==home(),sel:()=>!!V.sel,dlg:()=>!!document.querySelector(".v2dlg"),lb:()=>!!document.querySelector(".v2lb")};
  function bkSync(){for(const k of ["tab","sel","dlg","lb"]){const on=BKON[k](), i=BK.lastIndexOf(k);
    if(on&&i<0){BK.push(k); try{history.pushState({v2bk:BK.length},"");}catch(_){}}
    else if(!on&&i>=0){if(i===BK.length-1){BK.pop(); BKSKIP++; try{history.back();}catch(_){BKSKIP--;}} else BK[i]="x";}}}
@@ -887,53 +906,39 @@
   if(k==="lb") lbClose();
   else if(k==="dlg"){const d=document.querySelector(".v2dlg"); if(d){if(d.querySelector("#biensForm")) addClose(); else d.remove();}}
   else if(k==="sel") closeSel();
-  else if(k==="tab"){V.tab="explorer"; V.view="carte"; save(); show();}}
+  else if(k==="tab"){V.tab="explorer"; V.view=home(); save(); show();}}
  addEventListener("popstate",()=>{if(BKSKIP){BKSKIP--; return;} const k=BK.pop(); if(!k) return; if(k==="x"){try{history.back();}catch(_){} return;} bkClose(k);});
  new MutationObserver(bkLater).observe(document.body,{childList:true});
  {const f0=fiche, s0=show; fiche=function(){const r=f0.apply(this,arguments); bkLater(); const pc=$("v2p-explorer"); if(pc) pc.classList.toggle("v2fsh",PH()&&!!V.sel&&onMap()); app.classList.toggle("v3fmap",!!V.sel&&onMap()); requestAnimationFrame(()=>padSync()); return r;}; show=function(){const r=s0.apply(this,arguments); bkLater(); return r;};}
 
- /* ---------- au doigt (téléphone) : la liste et la fiche se tirent de n'importe où ----------
+ /* ---------- au doigt (téléphone) : la liste de la carte se tire de n'importe où ----------
     Le premier mouvement décide : de côté, on laisse faire (filtres, tableaux, annonce suivante) ; vers le haut ou le bas, on tire le
-    panneau si c'est utile — liste ou fiche en demi-écran : toujours ; liste agrandie ou fiche plein écran : vers le bas, une fois
-    remonté tout en haut de son contenu — sinon le contenu défile. Le navigateur ne recharge plus la page en tirant vers le bas. */
+    panneau de la carte si c'est utile — à mi-hauteur : toujours ; agrandi : vers le bas, une fois remonté tout en haut de son
+    contenu — sinon le contenu défile. La fiche, en pleine page, défile simplement. Le navigateur ne recharge plus la page en tirant vers le bas. */
  {let T=null;
   const scrollOf=(t,box)=>{for(let e=t; e&&e!==box.parentNode; e=e.parentNode){if(e.scrollHeight>e.clientHeight+2&&/(auto|scroll)/.test(getComputedStyle(e).overflowY)) return e;} return null;};
   document.addEventListener("touchstart",e=>{T=null; if(!PH()||e.touches.length!==1||LB||document.querySelector(".v2dlg")) return; const t=e.target, x=e.touches[0];
    if(t.closest("input,select,textarea,.maplibregl-canvas-container")) return;
-   const L=t.closest("#v2mlist"), F=V.sel&&t.closest("#v2fiche");
-   if(L) T={k:"l",el:L,x0:x.clientX,y0:x.clientY,h0:L.offsetHeight,sc:scrollOf(t,L)};
-   else if(F) T={k:"f",el:F,x0:x.clientX,y0:x.clientY,half:F.dataset.half!=="0",sc:F};},{passive:true});
+   const L=t.closest("#v2mlist"); if(L) T={k:"l",el:L,x0:x.clientX,y0:x.clientY,h0:L.offsetHeight,sc:scrollOf(t,L)};},{passive:true});
   document.addEventListener("touchmove",e=>{if(!T) return; const x=e.touches[0], dx=x.clientX-T.x0, dy=x.clientY-T.y0;
    if(T.on==null){if(Math.abs(dx)<8&&Math.abs(dy)<8) return; if(Math.abs(dx)>Math.abs(dy)){T=null; return;}
     const top=!T.sc||T.sc.scrollTop<=0;
-    T.on=T.k==="l"?(dy<0?!V.big:top):(T.half||(dy>0&&top)); if(!T.on){T=null; return;}}
+    T.on=dy<0?!V.big:top; if(!T.on){T=null; return;}}
    e.preventDefault(); T.dy=dy;
-   if(T.k==="l"){const H=$("v2map").offsetHeight; T.el.style.transition="none"; T.el.style.minHeight="0"; T.el.style.height=Math.max(56,Math.min(H*.9,T.h0-dy))+"px";}
-   else T.el.style.transform=dy>0?`translateY(${dy}px)`:"";},{passive:false});
-  const end=()=>{const S=T; T=null; if(!S||!S.on) return; const dy=S.dy||0;
-   if(S.k==="l"){const H=$("v2map").offsetHeight, h=S.el.offsetHeight; S.el.style.transition=""; S.el.style.minHeight=""; S.el.style.height=""; sheetSet(h>H*.65,h<H*.2); return;}
-   S.el.style.transform=""; FGT=Date.now();
-   if(dy>60) fStep(1); else if(dy<-50) fStep(-1);};
+   const H=$("v2map").offsetHeight; T.el.style.transition="none"; T.el.style.minHeight="0"; T.el.style.height=Math.max(56,Math.min(H*.9,T.h0-dy))+"px";},{passive:false});
+  const end=()=>{const S=T; T=null; if(!S||!S.on) return; const H=$("v2map").offsetHeight, h=S.el.offsetHeight; S.el.style.transition=""; S.el.style.minHeight=""; S.el.style.height=""; sheetSet(h>H*.65,h<H*.2);};
   /* toucher la poignée de la liste (sans tirer) : agrandie ou à mi-hauteur */
   let tch=0; document.addEventListener("touchstart",()=>{tch=Date.now();},{passive:true,capture:true});
   document.addEventListener("click",e=>{if(Date.now()-tch>800||!PH()||!e.target.closest||!e.target.closest("#v2mlist [data-v2grip]")) return; if(V.min) sheetSet(false,false); else sheetSet(!V.big,false);});
   document.addEventListener("touchend",end,{passive:true}); document.addEventListener("touchcancel",()=>{if(T&&T.el){T.el.style.transform=""; T.el.style.minHeight=""; T.el.style.height="";} T=null;},{passive:true});}
  window.V2CITY=()=>V.city||null;
  document.addEventListener("v2fiche-maj",()=>{if(!V.sel) return; const el=$("v2fiche"), y=el.scrollTop; fiche(); el.scrollTop=y;});
- /* tirer la fiche du téléphone par son en-tête (hors boutons) : vers le bas, elle se réduit puis se ferme ; vers le haut, elle s'agrandit */
- let FGT=0;
- {let y0=null, mv=false;
-  document.addEventListener("pointerdown",e=>{const f=e.target.closest&&e.target.closest("#v2fiche"); if(!f||!PH()||!V.sel||!onMap()||e.pointerType==="touch") return;
-   const half=f.dataset.half==="1", h=e.target.closest(".v2fhg,.v2fhd,.v2kl"), ui=e.target.closest("button,a,input,select,textarea,label,summary,[data-stmenu]")&&!e.target.closest("[data-v2fgrip]");
-   if(ui||!(half||h)) return; y0=e.clientY; mv=false;},true);   /* demi-écran : tout le bandeau ; fiche agrandie : son en-tête */
-  document.addEventListener("pointermove",e=>{if(y0!=null&&Math.abs(e.clientY-y0)>8) mv=true;},true);
-  const fin=e=>{if(y0==null) return; const dy=e.clientY-y0; y0=null; if(!mv) return; FGT=Date.now();
-   if(dy>50) fStep(1); else if(dy<-50) fStep(-1);};
-  document.addEventListener("pointerup",fin,true); document.addEventListener("pointercancel",()=>{y0=null;},true);}   /* ville affichée : ses fiches complètes sont lues en avance (25-annonces-cloud.js) */
+/* ville affichée : ses fiches complètes sont lues en avance (25-annonces-cloud.js) */
 
  /* ---------- événements ---------- */
- document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-v2tab],[data-v2scn],[data-v2vue],[data-v2sort],[data-v2more],[data-v2star],[data-v2vote],[data-v2ft],[data-v2fgrip],[data-v2close],[data-v2crit],[data-v2min],[data-v2nom],[data-v2share],[data-v2city],[data-v2open],[data-v2cfiche],[data-v2photos],[data-v2gonew],[data-v2reset],[data-v2offkeep],[data-v2csort],[data-v2add],[data-v2addx],[data-v2cmpx],[data-v2nas],[data-v2tous],[data-v2theme],[data-v2nav],[data-v2lien],[data-v2grp],[data-v2inv],[data-v2guide],[data-v2ret],[data-v2tipx],[data-v3view],[data-v3obj],[data-v3bst],[data-v3showcode],[data-v3onmap],[data-type]"); if(!t||!app.contains(t)&&!t.closest(".v2dlg")) return; const d=t.dataset;
-  if(d.v2tab!=null){e.preventDefault(); V.tab=TABS.some(x=>x[0]===d.v2tab)?d.v2tab:"explorer"; save(); show(); return;}
+ document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-v2tab],[data-v3nav],[data-v2scn],[data-v2vue],[data-v2sort],[data-v2more],[data-v2star],[data-v2vote],[data-v2ft],[data-v3go],[data-v3carte],[data-v2close],[data-v2crit],[data-v2min],[data-v2nom],[data-v2share],[data-v2city],[data-v2open],[data-v2cfiche],[data-v2photos],[data-v2gonew],[data-v2reset],[data-v2offkeep],[data-v2csort],[data-v2add],[data-v2addx],[data-v2cmpx],[data-v2nas],[data-v2tous],[data-v2theme],[data-v2nav],[data-v2lien],[data-v2grp],[data-v2inv],[data-v2guide],[data-v2ret],[data-v2tipx],[data-v3view],[data-v3obj],[data-v3bst],[data-v3showcode],[data-v3onmap],[data-type]"); if(!t||!app.contains(t)&&!t.closest(".v2dlg")) return; const d=t.dataset;
+  if(d.v3nav){V.tab="explorer"; V.sel=null; RET=null; if(d.v3nav==="villes"){V.city=null; LCITY=null; V.obj="villes";} else V.obj="annonces"; V.n=60; save(); show(); return;}
+  if(d.v2tab!=null){e.preventDefault(); if(d.v2tab==="reglages"&&V.tab!=="reglages") V.prev=V.tab; V.tab=TABS.some(x=>x[0]===d.v2tab)?d.v2tab:"explorer"; save(); show(); return;}
   if(d.v3view){V.view=d.v3view; V.n=60; save(); show(); return;}
   if(d.v3obj){V.obj=d.v3obj; V.n=60; save(); show(); return;}
   if(d.v3bst){V.bst=d.v3bst; save(); refresh(); return;}
@@ -947,13 +952,8 @@
   if(d.v2more!=null){V.n+=60; refresh(); return;}
   if(d.v2star){e.stopPropagation(); const [ck,...r]=d.v2star.split("|"); Promise.resolve(mStar(ck,r.join("|"))).then(()=>setTimeout(refresh,300)); return;}
   if(d.v2vote){e.stopPropagation(); const [id,c]=d.v2vote.split("|"), b=BIENS.find(x=>x.id===id), me=myName(); if(!b||!me) return; const v=Object.assign({},b.votes||{}); if(v[me]===c) delete v[me]; else v[me]=c; updBien(id,{votes:v}); return;}
-  if(d.v2ft){V.ftab=d.v2ft; save(); fiche(); const fe=$("v2fiche"), tb=fe.querySelector(".v2tabs2"), hh=(fe.querySelector(".v2fh")||{}).offsetHeight||0;
-   const pv=tb&&tb.previousElementSibling, top0=pv?pv.offsetTop+pv.offsetHeight+14:0;   /* place de la barre d'onglets avant qu'elle ne colle en haut */
-   if(tb&&fe.scrollTop>top0-hh) fe.scrollTop=top0-hh;   /* on arrive au début de l'onglet, pas au milieu */
-   const fo=d.v2focus&&$(d.v2focus); if(fo){fo.scrollIntoView({block:"center"}); fo.focus({preventScroll:true}); return;}
-   const sc=d.v3sec&&fe.querySelector(`details.fsec[data-sec="${d.v3sec}"]`); if(sc){sc.open=true; fe.scrollTop=Math.max(0,sc.offsetTop-hh-56); const su=sc.querySelector("summary"); if(su) su.focus({preventScroll:true}); return;}
-   const f=document.querySelector(`.v2tabs2 [data-v2ft="${d.v2ft}"]`); if(f) f.focus({preventScroll:true}); return;}
-  if(d.v2fgrip!=null){if(Date.now()-FGT<500) return; if(V.fmini) fStep(-1); else {V.fbig=!V.fbig; const sc=$("v2fiche").scrollTop; fiche(); $("v2fiche").scrollTop=sc; requestAnimationFrame(()=>{padSync(); if(!V.fbig&&V.sel) flyAd(V.sel);});} return;}
+  if(d.v2ft||d.v3go){qGo(d.v3go||FTQ[d.v2ft]||d.v2ft,d.v2focus); return;}
+  if(d.v3carte){V.view="carte"; goCity(d.v3carte); return;}
   if(d.v3onmap!=null){showOnMap(); return;}
   if(d.v2nav){navGo(+d.v2nav); return;}
   if(d.v2grp!=null){const n=($("v2nom2")&&$("v2nom2").value||myName()||"").trim(); if(!n){toast("Indiquez d'abord votre prénom."); if($("v2nom2")) $("v2nom2").focus(); return;} if(confirm("Créer un groupe pour vous : un code est choisi au hasard, puis vous invitez les autres par un lien. Continuer ?")) setGroup(genCode(),n); return;}
@@ -1006,7 +1006,8 @@
   if(a.dataset.opensrc!=null){V.tab="reglages"; V.popen.meth=true; V.sel=null; save(); show(); const s=$("sources"); if(s){s.open=true; s.scrollIntoView({block:"start"});} return;}
   const [k,ck,...r]=a.dataset.ad.split("|"), id=r.join("|"); if(k==="v") openSel(`v|${ck}|${id}`); else if(k==="l") window.open(ADURL+id,"_blank","noopener");});
  addEventListener("resize",()=>{if(M) M.resize();});
- document.addEventListener("toggle",e=>{const d=e.target; if(d.matches&&d.matches("details[data-v3pc]")){V.popen[d.dataset.v3pc]=d.open; save();}},true);
+ document.addEventListener("toggle",e=>{const d=e.target; if(d.matches&&d.matches("details[data-v3pc]")){V.popen[d.dataset.v3pc]=d.open; save();}
+  if(d.matches&&d.matches("#v2fiche details.v3q")){if(d.open) FQO.o.add(d.dataset.v3q); else FQO.o.delete(d.dataset.v3q);}},true);
  /* passage ordinateur ↔ téléphone (fenêtre redimensionnée, téléphone tourné) : la barre du périmètre change de forme */
  {let ph0=PH(); addEventListener("resize",()=>{if(PH()!==ph0){ph0=PH(); refresh();}});}
 

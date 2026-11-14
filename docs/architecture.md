@@ -57,7 +57,9 @@ L'interface `src/v3/` est un seul fichier JavaScript et un seul fichier CSS. Ell
 - **Projet** ;
 - **Réglages**.
 
-Sur ordinateur, ils sont dans la barre du haut, avec Réglages dans le rond à droite. Sur téléphone, ils sont dans la barre du bas. La fiche s'ouvre sur « L'essentiel ». Sur ordinateur, elle prend la place de la liste ; sur téléphone, elle s'ouvre dans un panneau en bas.
+Sur ordinateur, ils sont dans la barre du haut, avec Réglages dans le rond à droite. Sur téléphone, la barre du bas a Annonces, Villes (les deux faces d'Explorer, en liste par défaut), Nos biens et Projet ; Réglages est sous le rond en haut à droite, et la carte derrière le bouton des vues.
+
+La fiche est faite de questions repliées (`src/js/48b-questions.js` : `fqList`, `fqSum`, `gainTxt`), les mêmes que dans l'app Android. Chaque question regroupe des rubriques du moteur (`48-fiches.js`) et ajoute ce qui est propre à l'interface (prix comparé, scénario, offre, documents, quartiers d'une ville). Sur ordinateur, la fiche prend la place de la liste ; sur téléphone, elle s'ouvre en pleine page, avec Retour, et la carte ne bouge pas derrière.
 
 La carte (MapLibre) change de contenu avec le zoom :
 

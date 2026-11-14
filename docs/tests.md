@@ -15,7 +15,7 @@ Chaque suite se termine par une ligne « N/N tests réussis ». C'est **cette li
 | données | `tests/test_donnees.py` | 59 | scripts de `tools/`, cohérence des villes et des fichiers de `data/` |
 | MCP | `tests/mcp.test.mjs` | 15 | chaque outil du serveur MCP, avec les chiffres de l'app |
 | bout en bout v2 | `tests/run.js` | 169 | l'ancienne interface (`dist/test.html`) : carte à chaque zoom, thème, réglages communs sur une liste simulée |
-| bout en bout Insula | `tests/run-v3.js` | 209 | le site (`dist/essai-test.html`) : les quatre espaces, la fiche, les groupes et les invitations, le thème, sur ordinateur et téléphone |
+| bout en bout Insula | `tests/run-v3.js` | 208 | le site (`dist/essai-test.html`) : les quatre espaces, la fiche en questions, les groupes et les invitations, le thème, sur ordinateur et téléphone |
 
 ## Isolement
 

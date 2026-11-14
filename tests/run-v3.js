@@ -3,7 +3,7 @@
 const {chromium, devices} = require('playwright');
 const path = require('path');
 const URL = 'file://' + path.resolve(__dirname, '../dist/essai-test.html');
-const res = []; const ok = (n, c, info = '') => { res.push([n, !!c, info]); };
+const res = []; const ok = (n, c, info = '') => { res.push([n, !!c, info]); if (process.env.V2TRACE) console.log((c ? '✓ ' : '✗ ') + n + (c ? '' : '  → ' + info)); };   // V2TRACE=1 : chaque résultat tout de suite
 // carte 3D hors réseau : MapLibre servi depuis tests/vendor, style minimal à la place d'OpenFreeMap (les routes ajoutées ensuite passent avant)
 const ML = (n) => require('path').join(__dirname, 'vendor', 'maplibre-gl-4.7.1.' + n);
 async function mlRoutes(p) {
@@ -15,10 +15,10 @@ async function mlRoutes(p) {
 (async () => {
   const b = await chromium.launch();
   // __tab(k) : les anciens onglets dans la nouvelle structure (carte, annonces, villes : Explorer ; budget : Projet)
-  const MISS = []; { const nc = b.newContext.bind(b); b.newContext = async o => { const c = await nc(o); c.on('console', m => { const t = m.text(); if (t.startsWith('__miss ')) MISS.push(t.slice(7)); }); await c.addInitScript(() => { window.__cl = s => { const e = document.querySelector(s); if (e) e.click(); else console.warn('__miss ' + s); return !!e; }; window.__tab = k => {
+  const MISS = []; { const nc = b.newContext.bind(b); b.newContext = async o => { const c = await nc(o); c.on('console', m => { const t = m.text(); if (t.startsWith('__miss ')) MISS.push(t.slice(7)); }); await c.addInitScript(() => { window.__qall = () => document.querySelectorAll('#v2fiche details.v3q').forEach(d => { d.open = true; }); window.__cl = s => { const e = document.querySelector(s); if (e) e.click(); else console.warn('__miss ' + s); return !!e; }; window.__tab = k => {
       const q = s => document.querySelector(s), cl = s => { const e = q(s); if (e) e.click(); return !!e; };
-      if (k === 'carte') { cl('[data-v2tab="explorer"]'); cl('[data-v3view="carte"]'); if (!q('#v3scope [data-v2city=""]')) cl('[data-v3obj="villes"]'); return; }
-      if (k === 'annonces' || k === 'villes') { cl('[data-v2tab="explorer"]'); cl('[data-v3view="liste"]'); if (q('#v3scope [data-v2city=""]')) cl('#v3scope [data-v2city=""]'); cl(`[data-v3obj="${k}"]`); return; }
+      if (k === 'carte') { cl('[data-v2tab="explorer"]'); cl('[data-v3view="carte"]'); if (!q('#v3scope [data-v2city=""]')) { cl('[data-v3obj="villes"]'); cl('[data-v3nav="villes"]'); } return; }
+      if (k === 'annonces' || k === 'villes') { cl('[data-v2tab="explorer"]'); cl('[data-v3view="liste"]'); if (q('#v3scope [data-v2city=""]')) cl('#v3scope [data-v2city=""]'); cl(`[data-v3obj="${k}"]`); cl(`[data-v3nav="${k}"]`); return; }
       cl(`[data-v2tab="${k === 'budget' ? 'projet' : k}"]`); }; }); return c; }; }
   // adresse exacte dans « Ajouter un bien » (services simulés)
   { const c = await b.newContext({viewport: {width: 1300, height: 900}}); const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
@@ -102,7 +102,7 @@ async function mlRoutes(p) {
     await p.route('**/cdnjs.cloudflare.com/**', r => r.abort()); await p.route('**/apicarto.ign.fr/**', r => r.abort()); await mlRoutes(p);
     await p.goto(URL); await p.waitForTimeout(2000); await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(500);
     const open = s => p.evaluate(s => { const bt = document.createElement('button'); bt.dataset.v2open = s; document.getElementById('v2mlist').appendChild(bt); bt.click(); bt.remove(); }, s);
-    const sec = () => p.evaluate(() => { const d = document.querySelector('#v2fiche details[data-sec="copro"]'), a = document.querySelector('#v2fiche .fattn'); return {t: d ? d.innerText : '', a: a ? a.innerText : ''}; });
+    const sec = () => p.evaluate(() => { __qall(); const d = document.querySelector('#v2fiche details[data-sec="copro"]'), a = document.querySelector('#v2fiche .fattn'); return {t: d ? d.innerText : '', a: a ? a.innerText : ''}; });
     // une ville pas encore chargée : la fiche s'ouvre, puis la rubrique se remplit quand le registre arrive
     const s0 = await p.evaluate(() => { const ck = Object.keys(ADS).find(k => !COPROQ[k] && (ADS[k].ventes || []).some(a => { const f = FICHES[k] && FICHES[k][adId(a[3])]; return f && f.lots; })); const a = ADS[ck].ventes.find(a => { const f = FICHES[ck][adId(a[3])]; return f && f.lots; }); return 'v|' + ck + '|' + a[3]; });
     await open(s0); await p.waitForTimeout(1500); const r0 = await sec();
@@ -120,10 +120,10 @@ async function mlRoutes(p) {
     const s2 = await p.evaluate(async () => { const ck = Object.keys(ADS).find(k => (ADS[k].ventes || []).length > 20 && !CONCQ[k]); concData(ck); for (let i = 0; i < 40 && !CONCQ[ck]; i++) await new Promise(r => setTimeout(r, 100));
       let best = null, bn = -1; for (const a of ADS[ck].ventes) { const pt = concPoint(Object.assign(venteBien(ck, a), {kind: 'v', suf: a[3]}), null); if (!pt) continue; const A = concAround(CONCQ[ck], pt.lat, pt.lon); if (A.R.length + A.P.length > bn) { bn = A.R.length + A.P.length; best = a[3]; } }
       return {ck, sel: 'v|' + ck + '|' + best, n: bn}; });
-    await open(s2.sel); await p.waitForTimeout(800); await p.evaluate(() => __cl('#v2fiche [data-v2ft="quartier"]')); await p.waitForTimeout(400);
+    await open(s2.sel); await p.waitForTimeout(800); await p.evaluate(() => __qall()); await p.waitForTimeout(400);
     const o1 = await p.evaluate(() => { const d = document.querySelector('#v2fiche details[data-sec="offre"]'); return d ? d.innerText : ''; });
     ok('résidences et chantiers · fiche d\'une annonce : résidences à 1 km et logements neufs à 500 m, avec la position utilisée', s2.n > 0 && /Résidences étudiantes à moins de 1 km/i.test(o1) && /Logements neufs autorisés depuis janvier \d{4}, à moins de 500 m/i.test(o1) && /Mesuré autour/.test(o1), o1.slice(0, 300));
-    await open('c|' + s2.ck); await p.waitForTimeout(800); await p.evaluate(() => { const b = document.querySelector('#v2fiche [data-v2ft="quartier"]'); if (b) b.click(); }); await p.waitForTimeout(400);
+    await open('c|' + s2.ck); await p.waitForTimeout(800); await p.evaluate(() => __qall()); await p.waitForTimeout(400);
     const o2 = await p.evaluate(() => { const d = document.querySelector('#v2fiche details[data-sec="offre"]'); return d ? d.innerText : ''; });
     ok('résidences et chantiers · fiche de la ville : places pour 100 étudiants, logements et studios autorisés par an', /pour 100 étudiants/.test(o2) && /par an, dont \d[\d  ]* studios/.test(o2), o2.slice(0, 300));
     const at2 = await p.evaluate(() => { CONCQ.zz = {maj: '2026-11-10', res: [], pc: [[0.2, 48, '2026-06', 2, '', '', 180, 150, 10, 180, 2, 0, 'SCCV T', '1 rue T']]}; return concAttn({ville: 'zz', id: 'x', adresse: '1 rue T', lat: 48.001, lon: 0.2}, null).map(z => z[1]).join(' | '); });
@@ -141,7 +141,7 @@ async function mlRoutes(p) {
     await p.goto(URL); await p.waitForTimeout(2000); await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(500);
     const open = s => p.evaluate(s => { const bt = document.createElement('button'); bt.dataset.v2open = s; document.getElementById('v2mlist').appendChild(bt); bt.click(); bt.remove(); }, s);
     const txt = sel => p.evaluate(sel => [...document.querySelectorAll(sel)].map(d => d.innerText).join(' | '), sel);
-    const tab = k => p.evaluate(k => { const b = document.querySelector(`#v2fiche [data-v2ft="${k}"]`); if (b) b.click(); }, k);
+    const tab = () => p.evaluate(() => __qall());   // toutes les questions ouvertes
     await open('c|rennes'); await p.waitForTimeout(800);
     const all = async () => { let t = ''; for (const k of ['bien', 'prix', 'calc', 'quartier', 'achat']) { await tab(k); await p.waitForTimeout(150); t += await txt('#v2fiche .v2fb'); } return t; };
     const v1 = await all();
@@ -175,7 +175,7 @@ async function mlRoutes(p) {
       const K = b => docsList(b).flatMap(g => g[1].map(x => x[0])), z = K(mk({ville: 'rennes', dpe: 'F'})), l = K(mk({ville: 'lemans', dpe: 'C'})), g = checkFor(mk({ville: 'rennes', dpe: 'F'}));
       return {z, l, grille: g[g.length - 1][1].map(x => x[0]), titre: g[g.length - 1][0]}; });
     ok('documents à demander : copropriété (pièces de la loi ALUR, plan de travaux, DPE collectif), diagnostics, taxe foncière ; DPE F → audit ; zone tendue → dernier loyer ; mêmes cases que la grille de visite', ['copro', 'pv', 'charges', 'preetat', 'fonds', 'pppt', 'dpecol', 'diag', 'tfavis'].every(k => dz.z.includes(k) && dz.l.includes(k)) && dz.z.includes('dpefg') && !dz.l.includes('dpefg') && dz.z.includes('dernierloyer') && !dz.l.includes('dernierloyer') && dz.titre === 'Documents à obtenir' && JSON.stringify(dz.grille) === JSON.stringify(dz.z), JSON.stringify(dz));
-    ok('fiche d\'une annonce · onglet L\'achat : documents à demander, et lien depuis « Le bien »', /Documents à demander/.test(v2) && /Pré-état daté/.test(v2) && /Documents à demander avant une offre \(\d+\)/.test(v2), (v2.match(/Documents à demander.{0,120}/s) || [''])[0]);
+    ok('fiche d\'une annonce · « Si on y va ? » : documents à demander, annoncés dans le résumé de la question', /Documents à demander/i.test(v2) && /Pré-état daté/.test(v2) && /prix à proposer · documents à demander/.test(v2), (v2.match(/Documents à demander.{0,120}/s) || [''])[0]);
     ok('zone tendue, étudiants, revente, bruit · sans erreur', errs.length === 0, errs.join(' | '));
     await c.close(); }
   // l'interface : carte, fiche, annonces, villes, budget (ordinateur et téléphone)
@@ -187,6 +187,10 @@ async function mlRoutes(p) {
       await p.goto(URL2); await p.waitForTimeout(2000);
       ok(`insula ${dev} · critères au premier lancement`, await p.evaluate(() => !!document.querySelector('.v2dlg') && +document.getElementById('v2cN').textContent > 0));
       await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(1200);
+      if (dev === 'tel') {   // téléphone : l'accueil est la liste des annonces ; la carte est un bouton du haut
+        ok('insula tel · accueil : la liste des annonces, menu du bas Annonces · Villes · Nos biens · Projet, réglages sous le rond', await p.evaluate(() => document.getElementById('v2app').dataset.view === 'liste' && [...document.querySelectorAll('#v2tabbar button')].map(b => b.innerText.trim()).join() === 'Annonces,Villes,Nos biens,Projet' && document.querySelectorAll('#v3liste [data-v2open^="v|"]').length > 0 && !!document.querySelector('#v3scope .v3avp')),
+          await p.evaluate(() => [document.getElementById('v2app').dataset.view, [...document.querySelectorAll('#v2tabbar button')].map(b => b.innerText.trim()).join()].join(' | ')));
+        await p.evaluate(() => { __cl('[data-v3nav="villes"]'); __cl('[data-v3view="carte"]'); }); await p.waitForTimeout(1500); }
       ok(`insula ${dev} · carte de l'Ouest et ses 22 villes`, await p.evaluate(() => !!(window.V2MAP && V2MAP()) && V2MAPN.villes === C.length && document.querySelectorAll('#v2mlist [data-v2city]').length === C.length && C.length === 22));
       ok(`insula ${dev} · carte : toutes les couches acceptées (quartiers, annonces, villes, immeubles 3D)`, await p.evaluate(() => { const M = V2MAP(); return ['q-fill', 'q-line', 'q-lab', 'a-dot', 'a-hole', 'a-zone', 'a-clu', 'a-clu-n', 'a-sdot', 'a-shole', 'v-dot', 'v-lab', 'b3d', 'p-rail', 'p-rail2', 'p-rfn', 'p-rfn2', 'p-lig', 'p-dot'].every(l => M.getLayer(l)) && V2MAPN.err.length === 0; }), await p.evaluate(() => V2MAPN.err.join(' | ')));
       ok(`insula ${dev} · carte de l'Ouest : les grandes lignes de train sont dessinées (grande vitesse et 140 km/h et plus)`, await p.evaluate(() => { const M = V2MAP(); return M.getZoom() < 8 && M.queryRenderedFeatures({layers: ['p-rfn2']}).length > 0 && M.queryRenderedFeatures({layers: ['p-rfn']}).length > 0; }));
@@ -214,13 +218,13 @@ async function mlRoutes(p) {
           return JSON.stringify({liste: [Math.round(L.top), Math.round(L.bottom)], ligne: r && [Math.round(r.getBoundingClientRect().top), Math.round(r.getBoundingClientRect().bottom)], cf: c && [c.scrollWidth, c.clientWidth], vue: [innerWidth, innerHeight], tete: Math.round(document.querySelector('#v2mlist .v2mhead').getBoundingClientRect().height)}); }));
         { // fiche en demi-écran : chiffres sur une ligne, onglets visibles ; annonce suivante (glisser, bouton), partager, lien direct
           await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(900);
-          const hf = await p.evaluate(() => { const f = document.getElementById('v2fiche'), t = f.querySelector('.v2tabs2'), k = f.querySelector('.v2kl'); return {half: f.dataset.half, onglets: Math.round(t.getBoundingClientRect().top), vue: innerHeight, kl: !!k && getComputedStyle(k).display !== 'none' && k.getBoundingClientRect().height < 50, cases: getComputedStyle(f.querySelector('.v2kp')).display}; });
-          ok('insula tel · fiche en demi-écran : chiffres sur une ligne, onglets visibles sans faire défiler', hf.half === '1' && hf.kl && hf.cases === 'none' && hf.onglets < hf.vue - 100, JSON.stringify(hf));
+          const hf = await p.evaluate(() => { const f = document.getElementById('v2fiche'), r = f.getBoundingClientRect(), k = f.querySelector('.v3chf'); return {half: f.dataset.half, haut: Math.round(r.top), h: Math.round(r.height), vue: innerHeight, chiffres: !!k && k.children.length === 3 && k.getBoundingClientRect().bottom < innerHeight, q: f.querySelectorAll('details.v3q').length}; });
+          ok('insula tel · fiche en pleine page : trois chiffres dans le premier écran, puis les questions', hf.half === '0' && hf.haut <= 1 && hf.h >= hf.vue - 1 && hf.chiffres && hf.q >= 6, JSON.stringify(hf));
           const tit = () => p.evaluate(() => document.querySelector('#v2fiche .v2fh b').innerText);
-          const t0 = await tit(), cdp = await c.newCDPSession(p), y = await p.evaluate(() => Math.round(Math.min(document.querySelector('#v2fiche .v2tabs2').getBoundingClientRect().bottom + 40, innerHeight - 20)));
+          const t0 = await tit(), cdp = await c.newCDPSession(p), y = await p.evaluate(() => Math.round(Math.min(document.querySelector('#v2fiche .v3chf').getBoundingClientRect().bottom - 16, innerHeight - 120)));
           const sw = async (x0, x1) => { await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: x0, y}]}); for (let i = 1; i <= 6; i++) { await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x0 + (x1 - x0) * i / 6, y}]}); await p.waitForTimeout(16); } await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []}); await p.waitForTimeout(700); };
           await sw(300, 110); const t1 = await tit(), half1 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half); await sw(90, 300); const t2 = await tit();
-          ok('insula tel · glisser vers la gauche : annonce suivante de la liste, sans fermer la fiche ; vers la droite : retour', t1 !== t0 && t2 === t0 && half1 === '1', JSON.stringify([t0, t1, t2, half1]));
+          ok('insula tel · glisser vers la gauche : annonce suivante de la liste, sans fermer la fiche ; vers la droite : retour', t1 !== t0 && t2 === t0 && half1 === '0', JSON.stringify([t0, t1, t2, half1]));
           await p.tap('#v2fiche [data-v2nav="1"]'); await p.waitForTimeout(700); const t3 = await tit();
           await p.evaluate(() => { Object.defineProperty(navigator, 'share', {configurable: true, value: d => { window.__sh = d; return Promise.resolve(); }}); }); await p.tap('#v2fiche [data-v2lien]'); await p.waitForTimeout(300);
           const sh = await p.evaluate(() => window.__sh || null);
@@ -233,34 +237,24 @@ async function mlRoutes(p) {
           ok('insula tel · légende de la carte : une pastille (icône et menu), sans le mot « Quartiers »', lg.mot === 'none' && lg.icone && lg.w <= 200 && lg.h <= 48, JSON.stringify(lg)); }
         { // bouton ou geste « retour » : visionneuse, puis fiche, puis onglet ; fermer par l'app retire l'étape
           const back = async () => { await p.evaluate(() => { if (history.state && history.state.v2bk) history.back(); }); await p.waitForTimeout(600); };
-          const st = () => p.evaluate(() => ({lb: !!document.querySelector('.v2lb'), fiche: !document.getElementById('v2fiche').hidden, tab: document.querySelector('#v2tabbar [aria-current="page"]').dataset.v2tab, view: document.getElementById('v2app').dataset.view, h: history.state && history.state.v2bk || 0}));
+          const st = () => p.evaluate(() => ({lb: !!document.querySelector('.v2lb'), fiche: !document.getElementById('v2fiche').hidden, tab: (b => b.dataset.v2tab || b.dataset.v3nav)(document.querySelector('#v2tabbar [aria-current="page"]')), view: document.getElementById('v2app').dataset.view, h: history.state && history.state.v2bk || 0}));
           await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(800);
-          const s0 = await st(); await p.evaluate(() => { const b = document.querySelector('#v2fiche .v2fthb'); if (b) b.click(); }); await p.waitForTimeout(600); const s1 = await st();
+          const s0 = await st(); await p.evaluate(() => { const b = document.querySelector('#v2fiche .v3fph'); if (b) b.click(); }); await p.waitForTimeout(600); const s1 = await st();
           await back(); const s2 = await st(); await back(); const s3 = await st();
           await p.evaluate(() => __tab('annonces')); await p.waitForTimeout(600); await back(); const s4 = await st();
-          ok('insula tel · retour : ferme la visionneuse, puis la fiche, puis revient à la carte', s0.fiche && (!s1.lb || (!s2.lb && s2.fiche)) && !s3.fiche && s4.tab === 'explorer' && s4.view === 'carte', JSON.stringify({s0, s1, s2, s3, s4}));
+          ok('insula tel · retour : ferme la visionneuse, puis la fiche ; la liste des annonces est l\'accueil', s0.fiche && (!s1.lb || (!s2.lb && s2.fiche)) && !s3.fiche && s4.tab === 'annonces' && s4.view === 'liste', JSON.stringify({s0, s1, s2, s3, s4}));
           await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(800); const h1 = (await st()).h;
           await p.evaluate(() => (document.querySelector('[data-v2close]') || {click() {}}).click()); await p.waitForTimeout(600); const s5 = await st();
           ok('insula tel · retour : une fiche fermée par son bouton ne laisse pas d\'étape en trop', h1 > 0 && !s5.fiche && s5.h < h1, JSON.stringify({h1, s5}));
-          await p.evaluate(() => { __cl('#v3scope [data-v2city=""]'); __cl('[data-v3obj="villes"]'); }); await p.waitForTimeout(1200);   // la carte revient sur Le Mans pour la suite
+          await p.evaluate(() => { if (document.querySelector('#v3scope [data-v2city=""]')) __cl('#v3scope [data-v2city=""]'); __tab('carte'); }); await p.waitForTimeout(1200);   // la carte revient sur Le Mans pour la suite
           await p.evaluate(() => __cl('#v2mlist [data-v2city="lemans"]')); await p.waitForTimeout(1800); }
-        { // fiche en demi-écran sur la carte : l'annonce reste visible au-dessus ; la poignée l'agrandit puis la réduit
-          await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(1600);
-          const f1 = await p.evaluate(() => { const F = document.getElementById('v2fiche'), M = V2MAP(), t = F.getBoundingClientRect().top, y = M.project(M.getCenter()).y + M.getContainer().getBoundingClientRect().top; return {half: F.dataset.half, t: Math.round(t / innerHeight * 100), y: Math.round(y), top: Math.round(t)}; });
-          await p.tap('#v2fiche [data-v2fgrip]'); await p.waitForTimeout(500); const f2 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-          await p.tap('#v2fiche [data-v2fgrip]'); await p.waitForTimeout(500); const f3 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-          ok('insula tel · fiche en demi-écran sur la carte, annonce visible au-dessus, poignée pour l\'agrandir et la réduire', f1.half === '1' && f1.t >= 35 && f1.t <= 55 && f1.y < f1.top && f2 === '0' && f3 === '1', JSON.stringify({f1, f2, f3}));
-          ok('insula tel · fiche ouverte : un seul panneau en bas (la liste est masquée), bouton « Fermer »', await p.evaluate(() => getComputedStyle(document.getElementById('v2mlist')).display === 'none' && document.querySelector('#v2fiche [data-v2close]').textContent.trim() === 'Fermer'));
-          const tire = dy => p.evaluate(dy => { const h = document.querySelector('#v2fiche .v2fhg'), r = h.getBoundingClientRect(), o = {bubbles: true, clientX: r.left + 160, clientY: r.top + 10, pointerId: 1};
-            h.dispatchEvent(new PointerEvent('pointerdown', o)); document.dispatchEvent(new PointerEvent('pointermove', Object.assign({}, o, {clientY: r.top + 10 + dy}))); document.dispatchEvent(new PointerEvent('pointerup', Object.assign({}, o, {clientY: r.top + 10 + dy}))); }, dy);
-          await tire(-120); await p.waitForTimeout(400); const g1 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-          await tire(120); await p.waitForTimeout(400); const g2 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-          await tire(120); await p.waitForTimeout(600); const g25 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-          await tire(60); await p.waitForTimeout(600); const g3 = await p.evaluate(() => ({fiche: !document.getElementById('v2fiche').hidden, liste: getComputedStyle(document.getElementById('v2mlist')).display})); g3.mini = g25;
-          ok('insula tel · fiche : tirée vers le haut elle s\'agrandit, vers le bas demi-écran, bandeau, puis fermée, et la liste revient', g1 === '0' && g2 === '1' && g3.mini === '2' && !g3.fiche && g3.liste !== 'none', JSON.stringify({g1, g2, g3}));
-          if (await p.evaluate(() => !document.getElementById('v2fiche').hidden)) await p.evaluate(() => (document.querySelector('[data-v2close]') || {click() {}}).click()); await p.waitForTimeout(400);
-          await p.evaluate(() => __cl('#v3scope [data-v2city=""]')); await p.waitForTimeout(1200);
-          await p.evaluate(() => __cl('#v2mlist [data-v2city="lemans"]')); await p.waitForTimeout(1800); }
+        { // sur la carte, une annonce touchée s'ouvre en pleine page ; « Retour » ramène à la carte et à sa liste
+          await p.waitForFunction(() => !!document.querySelector('#v2mlist [data-v2open^="v|"]'), null, {timeout: 8000}).catch(() => {});
+          await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(1200);
+          const f1 = await p.evaluate(() => { const F = document.getElementById('v2fiche'), r = F.getBoundingClientRect(); return {half: F.dataset.half, top: Math.round(r.top), h: Math.round(r.height), vue: innerHeight, ret: (document.querySelector('#v2fiche [data-v2close]') || {textContent: ''}).textContent.trim(), act: !!document.querySelector('#v2fiche .v3fact')}; });
+          ok('insula tel · sur la carte, la fiche s\'ouvre en pleine page : « Retour » en haut, Suivre et Voir l\'annonce en bas', f1.half === '0' && f1.top <= 1 && f1.h >= f1.vue - 1 && f1.ret === 'Retour' && f1.act, JSON.stringify(f1));
+          await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(600);
+          ok('insula tel · Retour : la carte et sa liste reviennent', await p.evaluate(() => document.getElementById('v2fiche').hidden && getComputedStyle(document.getElementById('v2mlist')).display !== 'none')); }
         await p.tap('#v2mlist [data-v2cfiche="lemans"]'); await p.waitForTimeout(800);
         ok('insula tel · fiche de la ville depuis la barre du périmètre', await p.evaluate(() => !document.getElementById('v2fiche').hidden && /Le Mans/.test(document.querySelector('#v2fiche .v2ft').textContent)));
         await p.evaluate(() => (document.querySelector('[data-v2close]') || {click() {}}).click()); await p.waitForTimeout(400);
@@ -327,10 +321,10 @@ async function mlRoutes(p) {
         ok('insula ordi · annonce à position approchée : zone dessinée, fiche qui le dit', !!ka && await p.evaluate(() => V2MAP().queryRenderedFeatures({layers: ['a-zone']}).length === 1 && /position approchée/.test(document.querySelector('#v2fiche .v2pos').textContent)), String(ka));
         await p.evaluate(() => __cl('#v2mlist [data-v2open]')); await p.waitForTimeout(800);
       }
-      ok(`insula ${dev} · fiche en onglets avec la fourchette`, await p.evaluate(() => !document.getElementById('v2fiche').hidden && document.querySelectorAll('#v2fiche .v2tabs2 [data-v2ft]').length === 5 && /prudent .* favorable/.test(document.getElementById('v2fiche').textContent)));
+      ok(`insula ${dev} · fiche en questions, trois chiffres et la fourchette`, await p.evaluate(() => !document.getElementById('v2fiche').hidden && document.querySelectorAll('#v2fiche details.v3q').length >= 6 && !!document.querySelector('#v2fiche .v3chf') && /prudentes .* favorables/.test(document.getElementById('v2fiche').textContent)));
       // photos en grand : la photo de la fiche ouvre toutes les photos (pas de seconde bande de photos dans la fiche)
-      if (await p.$('#v2fiche .v2fthb')) {
-        await p.click('#v2fiche .v2fthb'); await p.waitForTimeout(500);
+      if (await p.$('#v2fiche .v3fph')) {
+        await p.click('#v2fiche .v3fph'); await p.waitForTimeout(500);
         const lb = () => p.evaluate(() => { const e = document.querySelector('.v2lb'); return e ? e.querySelector('.v2lbc').textContent : null; });
         const c0 = await lb(); const n = c0 ? +c0.split('/')[1] : 0;
         if (dev === 'ordi') { await p.keyboard.press('ArrowRight'); await p.waitForTimeout(300); }
@@ -340,15 +334,15 @@ async function mlRoutes(p) {
         await p.waitForTimeout(300);
         ok(`insula ${dev} · photos : fermer la visionneuse laisse la fiche ouverte`, await p.evaluate(() => !document.querySelector('.v2lb') && !document.getElementById('v2fiche').hidden));
       }
-      // ordinateur (et fiche plein écran) : les onglets visibles dès l'ouverture ; téléphone sur la carte (fiche en demi-écran) : le résumé d'abord, les onglets collés en haut dès qu'on fait défiler
-      ok(`insula ${dev} · fiche : les onglets visibles dès l'ouverture, ou collés en haut de la fiche en demi-écran`, await p.evaluate(async () => { const f = document.getElementById('v2fiche'), t = () => f.querySelector('.v2tabs2').getBoundingClientRect(), B = f.getBoundingClientRect();
-        if (f.dataset.half !== '1') return t().bottom < B.bottom - 40;
-        f.scrollTop = 600; await new Promise(r => setTimeout(r, 150)); const T = t(); f.scrollTop = 0; return T.top >= B.top - 1 && T.bottom < B.top + 140; }));
-      ok(`insula ${dev} · fiche : le DPE une seule fois dans l'en-tête`, await p.evaluate(() => { const h = document.querySelector('#v2fiche .v2fb'), t = h.querySelector('.v2tabs2'); let n = 0, e = h.firstElementChild; while (e && e !== t) { n += (e.innerText.match(/DPE [A-G]/g) || []).length; e = e.nextElementSibling; } return n <= 1; }));
-      await p.evaluate(() => { __cl('#v2fiche [data-v2ft="quartier"]'); }); await p.waitForTimeout(300);
+      // la barre d'actions (Suivre, Voir l'annonce) reste en bas de la fiche, au début comme après avoir fait défiler
+      ok(`insula ${dev} · fiche : Suivre et Voir l'annonce restent en bas`, await p.evaluate(async () => { const f = document.getElementById('v2fiche'), a = f.querySelector('.v3fact'), B = () => f.getBoundingClientRect().bottom, d = () => Math.abs(a.getBoundingClientRect().bottom - B());
+        if (!a) return false; const d0 = d(); f.scrollTop = 600; await new Promise(r => setTimeout(r, 150)); const d1 = d(); f.scrollTop = 0; return d0 < 2 && d1 < 2; }));
+      ok(`insula ${dev} · fiche : le DPE une seule fois dans l'en-tête`, await p.evaluate(() => { const h = document.querySelector('#v2fiche .v2fb'), t = h.querySelector('.v3qs'); let n = 0, e = h.firstElementChild; while (e && e !== t) { n += (e.innerText.match(/DPE [A-G]/g) || []).length; e = e.nextElementSibling; } return n <= 1; }));
+      await p.evaluate(() => { __qall(); }); await p.waitForTimeout(300);
       await p.evaluate(() => { document.getElementById('v2fiche').scrollTop = 1500; });
-      await p.evaluate(() => __cl('#v2fiche [data-v2ft="achat"]')); await p.waitForTimeout(300);
-      ok(`insula ${dev} · fiche : changer d'onglet ramène au début`, await p.evaluate(() => { const f = document.getElementById('v2fiche'), t = f.querySelector('.v2tabs2'), c = t.nextElementSibling; return Math.abs(c.getBoundingClientRect().top - t.getBoundingClientRect().bottom) < 30; }));
+      await p.evaluate(() => __qall()); await p.waitForTimeout(300);
+      ok(`insula ${dev} · fiche : un lien vers une question l'ouvre et la montre en haut`, await p.evaluate(() => { const f = document.getElementById('v2fiche'), b = document.createElement('button'); b.dataset.v3go = 'cher'; f.querySelector('.v2fb').appendChild(b); b.click(); b.remove();
+        const q = f.querySelector('details.v3q[data-v3q="cher"]'), h = f.querySelector('.v2fh').getBoundingClientRect().bottom; return q.open && Math.abs(q.getBoundingClientRect().top - h) < 20; }));
       ok(`insula ${dev} · fiche : le tableau des offres tient dans le panneau`, await p.evaluate(() => { const t = document.querySelector('#v2fiche .v2offx.v2tw'); return t && t.scrollWidth <= t.clientWidth + 1; }));
       const r0 = await p.evaluate(() => document.querySelector('#v2fiche .v2sec .v2k b').textContent);
       await p.evaluate(() => { const s = document.getElementById('v2off'); s.value = '88'; s.dispatchEvent(new Event('input', {bubbles: true})); }); await p.waitForTimeout(300);
@@ -367,8 +361,8 @@ async function mlRoutes(p) {
         await p.evaluate(() => __tab('annonces')); await p.waitForTimeout(500); }
       if (dev === 'tel') {   // fiche : les cinq onglets visibles ; Annonces : cash-flow sur sa ligne, tri ; Nos biens en lignes
         if (await p.evaluate(() => document.getElementById('v2fiche').hidden)) { await p.evaluate(() => __cl('#v3liste [data-v2open^="v|"]')); await p.waitForTimeout(600); }   // revenir à l'Ouest ferme la fiche
-        ok('insula tel · fiche : les cinq onglets tiennent sur l\'écran, libellés courts', await p.evaluate(() => { const B = [...document.querySelectorAll('#v2fiche .v2tabs2 [data-v2ft]')], W = document.getElementById('v2fiche').clientWidth;
-          return B.length === 5 && B.every(b => b.getBoundingClientRect().right <= W + 1 && b.scrollWidth <= b.clientWidth + 1) && B.map(b => b.textContent).join() === 'Essentiel,Prix,Calcul,Quartier,Achat'; }), await p.evaluate(() => [...document.querySelectorAll('#v2fiche .v2tabs2 [data-v2ft]')].map(b => b.textContent + ':' + Math.round(b.getBoundingClientRect().right)).join(' ')));
+        ok('insula tel · fiche : sept questions, chacune avec sa ligne de faits, rien ne dépasse en largeur', await p.evaluate(() => { const f = document.getElementById('v2fiche'), Q = [...f.querySelectorAll('details.v3q')];
+          return Q.length === 7 && Q.every(q => !!q.querySelector('summary small')) && f.scrollWidth <= f.clientWidth + 1; }), await p.evaluate(() => [...document.querySelectorAll('#v2fiche details.v3q summary')].map(s => s.innerText.replace(/\s+/g, ' ')).join(' | ')));
         ok('insula tel · Annonces : le cash-flow a sa ligne, entière', await p.evaluate(() => { const C = [...document.querySelectorAll('#v3liste .v2row .v2cfl')]; return C.length > 2 && C.every(c => c.scrollWidth <= c.clientWidth + 1); }));
         const prix = () => p.evaluate(() => [...document.querySelectorAll('#v3liste .v2row > b')].slice(0, 6).map(b => parseFloat(b.textContent.replace(',', '.'))));
         await p.evaluate(() => { const s = document.querySelector('#v3liste [data-v2sortm]'); s.value = 'p|1'; s.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(500);
@@ -415,10 +409,10 @@ async function mlRoutes(p) {
         await p.evaluate(() => __tab('villes')); await p.waitForTimeout(300);
         await p.evaluate(() => __cl('#v3liste [data-v2city="lemans"]')); await p.waitForTimeout(800);
         await p.evaluate(() => __cl('#v3scope [data-v2cfiche="lemans"]')); await p.waitForTimeout(800);
-        { const tx = async tab => { await p.evaluate(t => { const b = document.querySelector('#v2fiche [data-v2ft="' + t + '"]'); if (b) b.click(); }, tab); await p.waitForTimeout(300); return p.evaluate(() => (document.getElementById('v2fiche') || {}).textContent || ''); };
-          const tp = await tx('prix'), tc = await tx('calc'); await tx('bien');
+        { const tx = async () => { await p.evaluate(() => __qall()); await p.waitForTimeout(300); return p.evaluate(() => (document.getElementById('v2fiche') || {}).textContent || ''); };
+          const tp = await tx(), tc = tp;
           ok('insula · fiche d\'une ville : hausse des prix retenue, prix depuis 2014 et mois vides de la ville', /Hausse des prix retenue/.test(tp) && /Appartements anciens/.test(tp) && /Mois vides retenus/.test(tc), tp.slice(0, 120) + ' | ' + tc.slice(0, 120)); }
-        ok('insula · fiche d\'une ville : nomme son quartier du milieu', await p.evaluate(() => /Quartier du milieu : /.test((document.getElementById('v2fiche') || {}).innerText || '')), await p.evaluate(() => ((document.getElementById('v2fiche') || {}).innerText || '').slice(0, 300)));
+        ok('insula · fiche d\'une ville : nomme son quartier du milieu', await p.evaluate(() => /quartier du milieu : /i.test((document.getElementById('v2fiche') || {}).innerText || '')), await p.evaluate(() => ((document.getElementById('v2fiche') || {}).innerText || '').slice(0, 300)));
         await p.evaluate(() => { const b = document.querySelector('[data-v2close]'); if (b) b.click(); }); await p.waitForTimeout(300);
       }
       // mode « Tous » : studios, T2 et T3 ensemble, chaque annonce avec son type ; une annonce T2 s'ouvre avec les réglages T2
@@ -486,7 +480,7 @@ async function mlRoutes(p) {
     await A.p.evaluate(() => __tab('annonces')); await A.p.waitForTimeout(500);
     await A.p.evaluate(() => __cl('#v3liste [data-v2star]')); await A.p.waitForTimeout(1500);
     await A.p.evaluate(() => __cl('#v3liste [data-v2open]')); await A.p.waitForTimeout(600);
-    await A.p.evaluate(() => __cl('#v2fiche [data-v2ft="achat"]')); await A.p.waitForTimeout(300);
+    await A.p.evaluate(() => __qall()); await A.p.waitForTimeout(300);
     await A.p.evaluate(() => { const s = document.getElementById('v2off'); s.value = '90'; s.dispatchEvent(new Event('input', {bubbles: true})); s.dispatchEvent(new Event('change', {bubbles: true})); }); await A.p.waitForTimeout(1500);
     const off = (rows.find(x => x.data && x.data.kind !== 'reglages' && x.data.visite) || {data: {visite: {}}}).data.visite.offre;
     await tick(B.p); await B.p.waitForTimeout(1200);
@@ -503,7 +497,7 @@ async function mlRoutes(p) {
     ok('insula · le premier relevé d\'une ville ne compte pas comme nouveau', await B.p.evaluate(() => { const L = []; Object.keys(ADS).filter(k => ADS[k] && ADS[k].ventes && hStart(k, 'v')).forEach(k => ADS[k].ventes.forEach(a => { const e = hEntry(k, a[3]); if (e && e.f === hStart(k, 'v')) L.push([k, a[3]]); })); return L.length > 0 && L.every(([k, s]) => !isNewAd(k, s)); }));
     ok('insula · L\'Ouest compte les annonces pour nos critères', await B.p.evaluate(() => { const R = [...document.querySelectorAll('#v2mlist [data-v2city]:not(.v2dim)')]; return R.length > 0 && R.every(e => /pour nos critères/.test(e.innerText)); }), await B.p.evaluate(() => { const e = document.querySelector('#v2mlist [data-v2city]:not(.v2dim)'); return e ? e.outerHTML.slice(0, 300) : 'aucune ville avec des annonces'; }));
     // grille de visite et fiche à emporter, ouvertes depuis la fiche du bien suivi
-    await A.p.evaluate(() => __cl('#v2fiche [data-v2ft="achat"]')); await A.p.waitForTimeout(300);
+    await A.p.evaluate(() => __qall()); await A.p.waitForTimeout(300);
     await A.p.evaluate(() => __cl('#v2fiche [data-visit]')); await A.p.waitForTimeout(500);
     ok('insula · grille de visite ouverte depuis la fiche', await A.p.evaluate(() => !document.getElementById('visitPanel').hidden && document.querySelectorAll('#visitPanel [data-vck]').length > 10));
     await A.p.evaluate(() => __cl('#visitPanel .vclose')); await A.p.waitForTimeout(300);
@@ -538,44 +532,41 @@ async function mlRoutes(p) {
     await p.route('**/cdnjs.cloudflare.com/**', r => r.abort()); await mlRoutes(p);
     await p.goto(URL); await p.waitForTimeout(2000); await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(1200);
     const vis = s => `(e => !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0)(document.querySelector('${s}'))`;
-    const s0 = await p.evaluate(v => ({nav: [...document.querySelectorAll('#v2tabs [data-v2tab]')].map(b => b.textContent.replace(/\d+$/, '').trim()), bar: [...document.querySelectorAll('#v2tabbar [data-v2tab]')].map(b => b.dataset.v2tab), av: eval(v[0]), barre: eval(v[1]), titre: document.title, scope: !document.getElementById('v3scope').hidden, vue: document.getElementById('v2app').dataset.view}), [vis('#v3av'), vis('#v2tabbar')]);
-    ok(`insula ${dev} · quatre espaces : Explorer, Nos biens et Projet en haut avec le rond de Réglages (ordinateur), quatre entrées en bas (téléphone)`, s0.titre === 'Insula' && s0.scope && s0.vue === 'carte' && (dev === 'ordi' ? s0.nav.join() === 'Explorer,Nos biens,Projet' && s0.av && !s0.barre : s0.bar.join() === 'explorer,biens,projet,reglages' && !s0.av && s0.barre), JSON.stringify(s0));
+    const s0 = await p.evaluate(v => ({nav: [...document.querySelectorAll('#v2tabs [data-v2tab]')].map(b => b.textContent.replace(/\d+$/, '').trim()), bar: [...document.querySelectorAll('#v2tabbar button')].map(b => b.dataset.v2tab || b.dataset.v3nav), av: eval(v[0]), barre: eval(v[1]), titre: document.title, scope: !document.getElementById('v3scope').hidden, vue: document.getElementById('v2app').dataset.view}), [vis('#v3av'), vis('#v2tabbar')]);
+    ok(`insula ${dev} · quatre espaces : Explorer (en carte), Nos biens et Projet en haut avec le rond de Réglages (ordinateur) ; Annonces (en liste), Villes, Nos biens, Projet en bas (téléphone)`, s0.titre === 'Insula' && s0.scope && (dev === 'ordi' ? s0.vue === 'carte' && s0.nav.join() === 'Explorer,Nos biens,Projet' && s0.av && !s0.barre : s0.vue === 'liste' && s0.bar.join() === 'annonces,villes,biens,projet' && !s0.av && s0.barre), JSON.stringify(s0));
     // Explorer : villes ou annonces, en liste ou en graphique, avec la même barre du périmètre
-    await p.evaluate(() => { __cl('[data-v3view="liste"]'); }); await p.waitForTimeout(400);
+    await p.evaluate(() => { __cl('[data-v3view="liste"]'); if (document.querySelector('[data-v3nav="villes"]')) __cl('[data-v3nav="villes"]'); }); await p.waitForTimeout(400);
     const l1 = await p.evaluate(() => ({carte: !document.getElementById('v2map').parentNode.hidden, liste: !document.getElementById('v3liste').hidden, villes: document.querySelectorAll('#v3liste [data-v2city]').length}));
-    await p.evaluate(() => __cl('[data-v3obj="annonces"]')); await p.waitForTimeout(400);
+    await p.evaluate(() => __cl(document.querySelector('[data-v3nav="annonces"]') ? '[data-v3nav="annonces"]' : '[data-v3obj="annonces"]')); await p.waitForTimeout(400);
     const l2 = await p.evaluate(() => ({n: document.querySelectorAll('#v3liste [data-v2open^="v|"]').length, chips: [...document.querySelectorAll('#v3liste [data-v2vue]')].map(b => b.dataset.v2vue).join()}));
     await p.evaluate(() => __cl('[data-v3view="graph"]')); await p.waitForTimeout(400);
     const l3 = await p.evaluate(() => document.querySelectorAll('#v3liste svg [data-v2open]').length);
     ok(`insula ${dev} · Explorer : la vue Liste montre les villes puis les annonces (mêmes filtres, sans « Shortlist »), la vue Graphique leur nuage`, !l1.carte && l1.liste && l1.villes === 22 && l2.n > 10 && l2.chips === 'crit,new,drop,long,all' && l3 > 10, JSON.stringify({l1, l2, l3}));
-    await p.evaluate(() => { __cl('[data-v3view="carte"]'); __cl('[data-v3obj="villes"]'); }); await p.waitForTimeout(800);
+    await p.evaluate(() => { __cl('[data-v3view="carte"]'); __cl(document.querySelector('[data-v3nav="villes"]') ? '[data-v3nav="villes"]' : '[data-v3obj="villes"]'); }); await p.waitForTimeout(800);
     await p.evaluate(() => __cl('#v2mlist [data-v2city="lemans"]')); await p.waitForTimeout(1500);
     const sc = await p.evaluate(() => ({crumb: document.querySelector('#v3scope .v3crumb').innerText.replace(/\s+/g, ' '), fiche: !!document.querySelector('[data-v2cfiche="lemans"]')}));
     await p.evaluate(() => __cl('[data-v3view="liste"]')); await p.waitForTimeout(400);
     const lm = await p.evaluate(() => { const K = [...document.querySelectorAll('#v3liste [data-v2open]')].map(e => e.dataset.v2open); return {n: K.length, ok: K.every(k => k.startsWith('v|lemans|'))}; });
     ok(`insula ${dev} · périmètre : L'Ouest › Le Mans, la fiche de la ville en bouton, la liste ne montre que Le Mans`, (dev === 'ordi' ? /L'Ouest › Le Mans/.test(sc.crumb) : /^Le Mans$/.test(sc.crumb.trim())) && await p.evaluate(() => !!document.querySelector('#v3scope [data-v2city=""]')) && sc.fiche && lm.n > 0 && lm.ok, JSON.stringify({sc, lm}));
     await p.evaluate(() => __cl('[data-v3view="carte"]')); await p.waitForTimeout(800);
-    // la fiche : ouverte depuis une liste, sur « L'essentiel » ; ‹ › gardent l'onglet ; « En bref » mène à la rubrique ; scénario affiché dans la fiche
+    // la fiche : ouverte depuis une liste, questions repliées, « Suivre ce bien » ; une question ouverte le reste quand la fiche se redessine ; la suivante repart repliée
     await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(1200);
-    const f1 = await p.evaluate(() => { const F = document.getElementById('v2fiche'), r = F.getBoundingClientRect(), L = document.getElementById('v2mlist'); return {essentiel: (F.querySelector('.v2tabs2 [aria-pressed="true"]') || {}).textContent, bref: F.querySelectorAll('.v3bref [data-v3sec]').length, left: Math.round(r.left), w: Math.round(r.width), liste: getComputedStyle(L).display, fermer: F.querySelector('[data-v2close]').textContent.trim(), mot: /shortlist/i.test(document.getElementById('v2app').innerText), suivre: /Suivre ce bien|☆ Suivre/.test(F.innerText)}; });
-    ok(`insula ${dev} · fiche : ouverte sur « Essentiel », avec « En bref » et « Suivre ce bien » (plus de « shortlist »)`, f1.essentiel === 'Essentiel' && f1.bref >= 2 && f1.suivre && !f1.mot, JSON.stringify(f1));
+    const f1 = await p.evaluate(() => { const F = document.getElementById('v2fiche'), r = F.getBoundingClientRect(), L = document.getElementById('v2mlist'); return {q: F.querySelectorAll('details.v3q').length, ouvertes: F.querySelectorAll('details.v3q[open]').length, left: Math.round(r.left), w: Math.round(r.width), liste: getComputedStyle(L).display, fermer: F.querySelector('[data-v2close]').textContent.trim(), mot: /shortlist/i.test(document.getElementById('v2app').innerText), suivre: /Suivre ce bien|☆ Suivre/.test(F.innerText)}; });
+    ok(`insula ${dev} · fiche : ouverte sur ses questions repliées, avec « Suivre ce bien » (plus de « shortlist »)`, f1.q >= 6 && f1.ouvertes === 0 && f1.suivre && !f1.mot, JSON.stringify(f1));
     if (dev === 'ordi') {
-      ok('insula ordi · sur la carte, la fiche prend la place de la liste (à gauche), « ‹ Liste » la referme', f1.left < 40 && f1.w >= 400 && f1.w <= 460 && f1.liste === 'none' && f1.fermer === '‹ Liste', JSON.stringify(f1));
+      ok('insula ordi · sur la carte, la fiche prend la place de la liste (à gauche), « ‹ Liste » la referme', f1.left < 40 && f1.w >= 400 && f1.w <= 460 && f1.liste === 'none' && f1.fermer === 'Liste', JSON.stringify(f1));
       const pad = await p.evaluate(() => V2MAP().getPadding().left);
       ok('insula ordi · la carte se centre à droite de la fiche', pad > 400, String(pad));
     }
-    await p.evaluate(() => __cl('#v2fiche .v3bref [data-v3sec="prix"]')); await p.waitForTimeout(400);
-    const f2 = await p.evaluate(() => ({tab: (document.querySelector('#v2fiche .v2tabs2 [aria-pressed="true"]') || {}).textContent, open: !!document.querySelector('#v2fiche details.fsec[data-sec="prix"][open]')}));
+    await p.evaluate(() => document.querySelector('#v2fiche details.v3q[data-v3q="cher"] summary').click()); await p.waitForTimeout(300);
+    await p.evaluate(() => document.dispatchEvent(new Event('v2fiche-maj'))); await p.waitForTimeout(300);
+    const f2 = await p.evaluate(() => !!document.querySelector('#v2fiche details.v3q[data-v3q="cher"][open]'));
     await p.evaluate(() => __cl('#v2fiche [data-v2nav="1"]')); await p.waitForTimeout(700);
-    const f3 = await p.evaluate(() => (document.querySelector('#v2fiche .v2tabs2 [aria-pressed="true"]') || {}).textContent);
-    await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(400);
-    await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(900);
-    const f4 = await p.evaluate(() => (document.querySelector('#v2fiche .v2tabs2 [aria-pressed="true"]') || {}).textContent);
-    ok(`insula ${dev} · fiche : « En bref » mène à la rubrique ; l'annonce suivante garde l'onglet ; rouverte depuis la liste, retour sur « Essentiel »`, f2.tab === 'Prix' && f2.open && f3 === 'Prix' && f4 === 'Essentiel', JSON.stringify({f2, f3, f4}));
-    if (dev === 'tel') await p.evaluate(() => __cl('#v2fiche [data-v2fgrip]'));
+    const f3 = await p.evaluate(() => document.querySelectorAll('#v2fiche details.v3q[open]').length);
+    ok(`insula ${dev} · fiche : une question ouverte le reste quand la fiche se redessine ; l'annonce suivante repart repliée`, f2 && f3 === 0, JSON.stringify({f2, f3}));
     await p.waitForTimeout(300);
     await p.evaluate(() => __cl('#v2fiche .v3scnrow [data-v2scn="prudent"]')); await p.waitForTimeout(800);
-    const sn = await p.evaluate(() => ({pess: H.pess, ls: localStorage.getItem('scn'), lab: /Rendement 15 ans · prudent/i.test(document.getElementById('v2fiche').innerText)}));
+    const sn = await p.evaluate(() => ({pess: H.pess, ls: localStorage.getItem('scn'), lab: !!document.querySelector('#v2fiche .v3scnrow [data-v2scn="prudent"][aria-pressed="true"]')}));
     await p.evaluate(() => __cl('#v2fiche .v3scnrow [data-v2scn="central"]')); await p.waitForTimeout(600);
     ok(`insula ${dev} · fiche : le scénario se change depuis la fiche (le réglage est aussi dans Réglages)`, sn.pess && sn.ls === 'prudent' && sn.lab && await p.evaluate(() => !H.pess && !H.fav), JSON.stringify(sn));
     await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(400);
@@ -594,15 +585,16 @@ async function mlRoutes(p) {
     ok(`insula ${dev} · Nos biens vide : comment suivre une annonce, et le groupe dans Réglages`, await p.evaluate(() => /Touchez « Suivre »/.test(document.getElementById('v2p-biens').innerText) && !!document.querySelector('#v2p-biens [data-v2tab="reglages"]')));
     // démarrage : l'écran d'attente est retiré ; flèches de la fiche : des icônes
     ok(`insula ${dev} · démarrage : l'écran d'attente disparaît quand l'app est prête`, await p.evaluate(() => !document.getElementById('v3boot')));
-    // fermer une fiche : retour à l'écran d'avant (ici toutes les annonces de l'Ouest, carte dézoomée), pas aux annonces de la ville de l'annonce
-    await p.evaluate(() => __tab('carte')); await p.waitForTimeout(300); await p.evaluate(() => { __cl('#v3scope [data-v2city=""]'); __cl('[data-v3obj="annonces"]'); }); await p.waitForTimeout(800);
+    // fermer une fiche : retour à l'écran d'avant (ici toutes les annonces de l'Ouest, carte dézoomée), pas aux annonces de la ville de l'annonce ;
+    // sur l'ordinateur la carte va sur l'annonce pendant que la fiche est ouverte, sur le téléphone elle ne bouge pas (la fiche la couvre)
+    await p.evaluate(() => __tab('carte')); await p.waitForTimeout(300); await p.evaluate(() => { if (document.querySelector('#v3scope [data-v2city=""]')) __cl('#v3scope [data-v2city=""]'); __cl(document.querySelector('[data-v3nav="annonces"]') ? '[data-v3nav="annonces"]' : '[data-v3obj="annonces"]'); }); await p.waitForTimeout(800);
     await p.evaluate(() => V2MAP().jumpTo({center: [-0.6, 47.75], zoom: 6.5, pitch: 0, bearing: 0})); await p.waitForTimeout(1200);
     const av = await p.evaluate(() => ({head: document.querySelector('#v2mlist .v2mhead').innerText, z: V2MAP().getZoom()}));
     await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(2500);
     const pend = await p.evaluate(() => ({z: V2MAP().getZoom(), fl: !!document.querySelector('#v2fiche .v2nav svg')}));
     await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(1800);
     const ap = await p.evaluate(() => ({head: document.querySelector('#v2mlist .v2mhead').innerText, crumb: document.querySelector('#v3scope .v3crumb').innerText.trim(), z: V2MAP().getZoom()}));
-    ok(`insula ${dev} · fermer une fiche ramène à l'écran d'avant (même liste, même cadrage de la carte)`, /^L'Ouest/.test(av.head) && pend.z > 12 && /^L'Ouest/.test(ap.head) && /L'Ouest$/.test(ap.crumb) && Math.abs(ap.z - av.z) < 0.6 && pend.fl, JSON.stringify({av, pend, ap}));
+    ok(`insula ${dev} · fermer une fiche ramène à l'écran d'avant (même liste, même cadrage de la carte)`, /^L'Ouest/.test(av.head) && (dev === 'tel' ? Math.abs(pend.z - av.z) < 0.6 : pend.z > 12) && /^L'Ouest/.test(ap.head) && /L'Ouest$|^INSULA · L'OUEST/i.test(ap.crumb) && Math.abs(ap.z - av.z) < 0.6 && pend.fl, JSON.stringify({av, pend, ap}));
     if (dev === 'ordi') {
       await p.evaluate(() => __cl('[data-v3view="liste"]')); await p.waitForTimeout(500); await p.evaluate(() => __cl('#v3liste [data-v2open^="v|"]')); await p.waitForTimeout(800);
       await p.evaluate(() => __cl('#v2fiche [data-v3onmap]')); await p.waitForTimeout(1800);
@@ -619,11 +611,6 @@ async function mlRoutes(p) {
       await tire('#v2mlist .v2mhead .v2crumb', 330); await p.waitForTimeout(500); const m1 = await p.evaluate(() => document.getElementById('v2mlist').dataset.min);
       await tire('#v2mlist .v2mhead .v2crumb', -330); await p.waitForTimeout(500); const m2 = await p.evaluate(() => document.getElementById('v2mlist').dataset.min);
       ok('insula tel · la liste se réduit et revient en tirant son en-tête, sans bouton « Réduire »', !rb && m1 === '1' && m2 === '0', JSON.stringify({rb, m1, m2}));
-      await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(1200);
-      await tire('#v2fiche .v2fhd', -150); await p.waitForTimeout(500); const g1 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-      await tire('#v2fiche .v2fhd', 150); await p.waitForTimeout(500); const g2 = await p.evaluate(() => document.getElementById('v2fiche').dataset.half);
-      ok('insula tel · fiche : tout le bandeau (photo, titre) la tire vers le haut ou vers le bas', g1 === '0' && g2 === '1', JSON.stringify({g1, g2}));
-      await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(500);
       // au doigt, de n'importe où : une annonce de la liste, les filtres ; la fiche par son contenu (vrais événements tactiles)
       const cdp = await c.newCDPSession(p);
       const td = async (sel, dy) => { const r = await p.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left + Math.min(b.width / 2, 150), b.top + Math.min(b.height / 2, 20)]; }, sel); if (!r) return false;
@@ -636,8 +623,9 @@ async function mlRoutes(p) {
       await td('#v2mlist .v2mhead', 220); const a3 = await st(); await td('#v2mlist .v2mhead', -200); const a4 = await st();
       ok('insula tel · la liste se tire de n\'importe où au doigt : depuis les filtres elle s\'agrandit, depuis une annonce elle redescend, puis se réduit et revient', a1.big === '1' && a2.big === '0' && a2.min === '0' && a3.min === '1' && a4.min === '0', JSON.stringify({a1, a2, a3, a4}));
       await p.evaluate(() => __cl('#v2mlist [data-v2open^="v|"]')); await p.waitForTimeout(1200);
-      await td('#v2fiche .v2tabs2', -200); const b1 = await st(); await td('#v2fiche .v2fb', 250); const b2 = await st(); await td('#v2fiche .v2fb', 250); const b3 = await st(); await td('#v2fiche .v2fh', -150); const b4 = await st(); await td('#v2fiche .v2fh', 120); await td('#v2fiche .v2fh', 120); const b5 = await st();
-      ok('insula tel · la fiche se tire de n\'importe où au doigt : vers le haut elle s\'agrandit ; vers le bas, demi-écran, puis réduite à son bandeau (la carte visible), puis fermée', b1.half === '0' && b2.half === '1' && b3.half === '2' && b3.fiche && b4.half === '1' && !b5.fiche, JSON.stringify({b1, b2, b3, b4, b5}));
+      await td('#v2fiche .v3fhead', -250); const b1 = await st(); await td('#v2fiche .v3qs', 250); const b2 = await st();
+      ok('insula tel · la fiche défile au doigt, sans se réduire ni se fermer', b1.fiche && b1.half === '0' && b2.fiche && b2.half === '0', JSON.stringify({b1, b2}));
+      await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(500);
       // téléphone : le type de bien dans un menu compact ; la fiche de la ville, « Tout sur … » en tête de sa liste
       await p.evaluate(() => { const s = document.querySelector('#v3scope [data-v3type]'); s.value = 't2'; s.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(1200);
       const ty = await p.evaluate(() => ({t: H.type, barre: getComputedStyle(document.querySelector('.v2top')).display}));
@@ -645,14 +633,12 @@ async function mlRoutes(p) {
       ok('insula tel · type de bien : un menu compact dans la barre du périmètre, plus de barre de boutons', ty.t === 't2' && ty.barre === 'none' && await p.evaluate(() => H.type === 'studio'), JSON.stringify(ty));
       await p.evaluate(() => { __cl('[data-v3obj="villes"]'); __cl('#v2mlist [data-v2city="lemans"]'); }); await p.waitForTimeout(1500);
       ok('insula tel · « Tout sur la ville » en tête de la liste de la ville', await p.evaluate(() => { const e = document.querySelector('#v2mlist [data-v2cfiche="lemans"]'); return !!e && /Tout sur la ville/.test(e.innerText) && /Tout sur Le Mans/.test(e.getAttribute('aria-label')) && !document.querySelector('#v3scope [data-v2cfiche]'); }));
-      // depuis la vue Liste : tirer la fiche vers le bas montre l'annonce sur la carte ; la fermer ramène à la liste
+      // depuis la vue Liste : la fiche en pleine page, sans « Voir sur la carte » ; Retour ramène à la liste
       await p.evaluate(() => __cl('[data-v3view="liste"]')); await p.waitForTimeout(500); await p.evaluate(() => __cl('#v3liste [data-v2open^="v|"]')); await p.waitForTimeout(800);
-      const c0 = await p.evaluate(() => ({view: document.getElementById('v2app').dataset.view, half: document.getElementById('v2fiche').dataset.half, bouton: !!document.querySelector('#v2fiche [data-v3onmap]')}));
-      await td('#v2fiche .v2fhd', 200); await p.waitForTimeout(1800);
-      const c1 = await p.evaluate(() => ({view: document.getElementById('v2app').dataset.view, half: document.getElementById('v2fiche').dataset.half, fiche: !document.getElementById('v2fiche').hidden, z: V2MAP().getZoom()}));
+      const c0 = await p.evaluate(() => ({view: document.getElementById('v2app').dataset.view, half: document.getElementById('v2fiche').dataset.half, fiche: !document.getElementById('v2fiche').hidden, bouton: !!document.querySelector('#v2fiche [data-v3onmap]')}));
       await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(800);
       const c2 = await p.evaluate(() => ({view: document.getElementById('v2app').dataset.view, fiche: !document.getElementById('v2fiche').hidden}));
-      ok('insula tel · fiche ouverte depuis la liste : tirée vers le bas, l\'annonce apparaît sur la carte (demi-écran) ; fermée, retour à la liste', c0.view === 'liste' && c0.half === '0' && c0.bouton && c1.view === 'carte' && c1.half === '1' && c1.fiche && c1.z > 12 && c2.view === 'liste' && !c2.fiche, JSON.stringify({c0, c1, c2}));
+      ok('insula tel · fiche ouverte depuis la liste : en pleine page ; Retour ramène à la liste', c0.view === 'liste' && c0.half === '0' && c0.fiche && !c0.bouton && c2.view === 'liste' && !c2.fiche, JSON.stringify({c0, c2}));
       await p.evaluate(() => __cl('[data-v3view="carte"]')); await p.waitForTimeout(500);
       ok('insula tel · l\'espace courant se voit : trait en haut, icône remplie ; type de bien à droite du lieu', await p.evaluate(() => { const b = q => getComputedStyle(document.querySelector('#v2tabbar [aria-current="' + q + '"]'), '::before').opacity, f = q => getComputedStyle(document.querySelector('#v2tabbar [aria-current="' + q + '"] svg g')).fill, sc = document.getElementById('v3scope'), c = sc.querySelector('.v3crumb'), t = sc.querySelector('.v3typ'); return b('page') === '1' && b('false') === '0' && f('page') !== f('false') && !!c && !!t && (c.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) > 0 && c.getBoundingClientRect().left < t.getBoundingClientRect().left; }));
       ok('insula tel · tirer vers le bas ne recharge pas la page', await p.evaluate(() => getComputedStyle(document.documentElement).overscrollBehaviorY === 'none'));

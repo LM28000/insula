@@ -2,6 +2,14 @@
 
 Les grandes étapes du site. Le détail de chaque changement est dans l'historique git, où les messages de commit sont rédigés. Les notes de l'app Android sont dans son propre dépôt.
 
+## 14 novembre 2026 — Les fiches en questions
+
+- La fiche est faite de questions repliées, les mêmes dans l'app Android : qu'est-ce qu'on achète, est-ce cher, combien il se louera, combien ça coûte et rapporte, ce qui peut mal tourner, où c'est, si on y va. Chacune a sa ligne de faits ; en tête, trois chiffres et « À regarder » ; en bas, Suivre et Voir l'annonce.
+- « Gagnant après N ans » si l'on revend : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et ce qu'on a sorti de notre poche.
+- Sur téléphone : la liste des annonces est l'accueil, la carte un bouton ; menu du bas Annonces, Villes, Nos biens, Projet ; Réglages sous le rond ; la fiche s'ouvre en pleine page, sans panneau à tirer.
+- La fiche d'une ville mène à ses annonces pour nos critères et liste ses quartiers, du plus rentable au moins rentable.
+- La description d'une annonce ne s'affiche plus en double.
+
 ## 12 novembre 2026 — Insula devient le site
 
 - La nouvelle interface (`src/v3`) est servie à l'adresse d'origine, https://insula.du-cray.eu. Elle a quatre espaces identiques sur ordinateur et téléphone : Explorer, Nos biens, Projet, Réglages.

@@ -680,3 +680,67 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
   .v2tabbar button[aria-current="page"] .v3av.sm{box-shadow:none}
 }
 @media (max-width:860px){.v2tabbar button .v3av.sm{margin:1px 18px}}
+
+/* ---------- la fiche en questions (refonte du 14 novembre 2026) ----------
+   En tête, sur fond clair : la photo, le titre, trois chiffres, « À regarder » ; puis les questions repliées en cartes sur le fond
+   de la page ; en bas, collée, la barre d'actions (Suivre, Voir l'annonce). Sur le téléphone, toujours en pleine page. */
+.v2fiche{background:var(--bg)}
+.v2fiche .v2fb{padding:0 0 24px;gap:0}
+.v3ret{display:inline-flex;align-items:center;gap:2px;padding-left:6px}
+.v3ret svg{width:18px;height:18px;display:block}
+.v3ret svg path,.v3ql svg path,.v3q summary svg path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.v3fph{display:block;position:relative;width:100%;aspect-ratio:16/9;max-height:300px;border:0;padding:0;margin:0;background:var(--sunk);cursor:zoom-in;line-height:0}
+.v3fph img{width:100%;height:100%;object-fit:cover;display:block}
+.v3fph .v2fthn{right:12px;bottom:12px;font-size:12px;padding:3px 8px;border-radius:999px}
+.v3fph:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.v3fhead{background:var(--surface);padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid var(--line)}
+.v3fhead .v2ft{margin:0;font-size:22px;line-height:1.25}
+.v3fhead>.v2sub{margin:0}
+.v3chf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.v3chf>div{background:var(--bg);border-radius:var(--radius-md);padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.v3chf span{font-size:11.5px;font-weight:600;color:var(--muted)}
+.v3chf b{font-size:20px;line-height:1.2;white-space:nowrap}
+.v3chf small{font-size:11.5px;line-height:1.3;color:var(--muted)}
+.v3cta{width:100%;justify-content:center;min-height:46px}
+.v3att h3{margin:0 0 6px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.v3att ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.v3att li{position:relative;padding-left:16px;font-size:13.5px;line-height:1.4}
+.v3att li::before{content:"";position:absolute;left:0;top:6px;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.v3att li.bad::before{background:var(--bad)}
+.v3att .v2lnk{margin-top:6px;font-size:13px}
+.v3qs{display:flex;flex-direction:column;gap:8px;padding:12px}
+.v3q{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg)}
+.v3q[open]{border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.v3q>summary{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:64px;box-sizing:border-box;cursor:pointer;list-style:none;border-radius:var(--radius-lg)}
+.v3q>summary::-webkit-details-marker{display:none}
+.v3q>summary>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.v3q>summary b{font-size:15.5px;color:var(--fg)}
+.v3q>summary small{font-size:13px;line-height:1.4;color:var(--muted)}
+.v3q>summary svg{width:18px;height:18px;flex-shrink:0;color:var(--muted);transition:transform .15s}
+.v3q[open]>summary svg{transform:rotate(180deg);color:var(--accent)}
+.v3q>summary:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.v3qb{padding:0 14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.v3qb>details.fsec:first-child,.v3qb>.v2sec:first-child{border-top:0}
+.v3gain{background:var(--bg);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;gap:4px}
+.v3gain b{font-size:15px}
+.v3gain small{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.v3ql{display:flex;flex-direction:column}
+.v3ql button{display:flex;align-items:center;gap:10px;min-height:46px;border:0;border-top:1px solid var(--line);background:none;padding:0 2px;font:inherit;color:var(--fg);text-align:left;cursor:pointer}
+.v3ql button:first-child{border-top:0}
+.v3ql button span{flex:1;min-width:0;font-weight:600;font-size:14px}
+.v3ql button svg{width:16px;height:16px;color:var(--muted)}
+.v3ql button:hover{background:var(--sunk)}
+.v3src{padding:0 12px}
+.v3disc{padding:4px 16px 0;margin:0;font-size:12.5px}
+.v3fact{position:sticky;bottom:0;z-index:5;display:flex;gap:8px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -1px 0 var(--line),0 -6px 18px rgba(20,32,48,.08)}
+.v3fact .v2btn{min-height:48px;justify-content:center;font-size:15px;white-space:nowrap}
+.v3fact .v2btn:first-child{flex:1}
+.v3avp,.v3retp{display:none}
+@media (max-width:860px){
+  .v3avp{display:grid;width:36px;height:36px;font-size:14px;margin-left:2px}
+  .v3retp{display:inline-flex}
+  .v3biens>.v2bar,.v3projet>.v2bar,.v3regl>.v2bar{flex-wrap:wrap;align-items:center}
+  .v3biens>.v2bar>.v2sub{order:9;flex-basis:100%}   /* le titre, le bouton et le rond sur une ligne ; la phrase dessous */
+  .v2fiche .v2fh{padding-top:max(10px,env(safe-area-inset-top,0px))}
+  .v2fiche{padding-top:0}
+}

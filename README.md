@@ -26,8 +26,8 @@ C'est un outil personnel, fait pour un couple puis pour la famille et les amis. 
 
 | Espace | Contenu |
 |---|---|
-| **Explorer** | l'Ouest, puis une ville, en carte, en liste ou en graphique. De loin, les villes sont colorées par rendement. De près, on voit les quartiers (IRIS) colorés selon la mesure choisie, les annonces à leur position, les lignes de bus et de tram, et les immeubles en 3D. |
-| **La fiche** | l'essentiel d'abord. Puis le prix comparé aux ventes réelles du quartier, le calcul (modifiable), le quartier (trajets, commerces, risques, bruit, habitants, copropriété) et l'achat (prix à proposer, documents à demander). |
+| **Explorer** (sur téléphone : **Annonces** et **Villes**) | l'Ouest, puis une ville, en liste, en carte ou en graphique. Sur téléphone, la liste des annonces est l'accueil et la carte un bouton du haut. De loin, les villes sont colorées par rendement. De près, on voit les quartiers (IRIS) colorés selon la mesure choisie, les annonces à leur position, les lignes de bus et de tram, et les immeubles en 3D. |
+| **La fiche** | en pleine page sur téléphone. En tête, la photo, trois chiffres (rendement, cash-flow, budget) et ce qu'il faut regarder. Puis des questions repliées, chacune avec deux ou trois faits : qu'est-ce qu'on achète, est-ce cher, combien il se louera, combien ça coûte et rapporte (avec « gagnant après N ans » si l'on revend), ce qui peut mal tourner, où c'est, et si on y va (prix à proposer, documents à demander). En bas, Suivre et Voir l'annonce. Des faits et leur point de comparaison, jamais de conclusion. |
 | **Nos biens** | les biens suivis, étape par étape : à voir, visité, offre, compromis, acheté. Avec l'avis de chacun, l'offre, la grille de visite, les échéances et un comparateur. |
 | **Projet** | ce qui est commun au groupe : critères, crédit, associés (1 à 6) et impôts, hypothèses, ce qui pèse le plus. |
 | **Réglages** | prénom, code de groupe, thème clair ou sombre, scénario (prudent, central, favorable), aide. |
