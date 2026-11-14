@@ -10,6 +10,10 @@
 const adId=suf=>String(suf||"").split("?")[0].split("/").pop();
 const ficx=suf=>FICX[adId(suf)]||null;
 const FD=FICHES||{}, FDL={}, FPRIV=!!ADSRAW.prive;   /* annonces privées : fiches dans Supabase (ADSRAW est remplacé par les annonces reçues, sans ce drapeau) */
+/* une description écrite en capitales (plus de 70 % des lettres) : en minuscules, une majuscule en début de phrase ;
+   les noms propres perdent la leur, mais le texte se lit */
+function phrases(d){const L=d.match(/\p{L}/gu)||[], U=d.match(/\p{Lu}/gu)||[]; if(L.length<40||U.length/L.length<0.7) return d;
+ return d.toLocaleLowerCase("fr-FR").replace(/(^|[.!?]\s+|\n\s*)(\p{L})/gu,(m,a,b)=>a+b.toLocaleUpperCase("fr-FR"));}
 /* undefined : en cours de chargement · null : pas encore relevée */
 function ficheOf(ck,suf){const c=FD[ck]; if(c) return c[adId(suf)]||null; if(FICHES) return null; ficheLoad(ck); return undefined;}
 function ficheLoad(ck){if(FICHES||FDL[ck]||!ck) return; FDL[ck]=1;
@@ -52,7 +56,7 @@ function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon
   !loc&&f.frais&&["Frais d'agence",f.frais==="seller"?"à la charge du vendeur":f.frais==="purchaser"?"à la charge de l'acquéreur":esc(f.frais),f.hors&&f.prix&&f.hors<f.prix?`${eur(f.hors)} hors honoraires (${fr((f.prix/f.hors-1)*100,1)} %)`:""],
   (f.pub||f.maj)&&["Annonce",[f.pub&&`en ligne au moins depuis le ${frD(f.pub)}`,f.maj&&`modifiée le ${frD(f.maj)}`].filter(Boolean).join(" · ")],
   f.off&&["Statut","<b>retirée du marché</b> selon Bien'ici"]].filter(Boolean);
- const d=String(f.d||""), cut=d.length>520?d.lastIndexOf(" ",480):-1;
+ const d=phrases(String(f.d||"")), cut=d.length>520?d.lastIndexOf(" ",480):-1;
  /* une longue description : le début, puis « Lire la suite » ouvre la fin seulement (avant, la description entière, et le début s'affichait deux fois) */
  const desc=d?`<div class="fdesc">${esc(cut>0?d.slice(0,cut)+"…":d)}</div>${cut>0?`<details class="fdmore"><summary>Lire la suite</summary><div class="fdesc">…${esc(d.slice(cut).trim())}</div></details>`:""}`:`<p class="sub">Pas de description.</p>`;
  const ph=(f.ph||[]).map((p,i)=>`<a href="${esc(photoFull(suf,p))}" target="_blank" rel="noopener" aria-label="Photo ${i+1} sur ${f.ph.length}, en grand"><img src="${esc(photoUrl(suf,p,360,270))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join("");

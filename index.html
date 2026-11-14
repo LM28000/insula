@@ -1147,6 +1147,20 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
   #v3liste .v2tw>.v2row{max-width:880px}
   .v2fiche .v3fph{max-height:340px}
 }
+
+/* dans une question, les rubriques ne se replient plus : leur titre devient un intertitre, sans retrait (14 novembre 2026) */
+.v3qb details.fsec>summary{pointer-events:none;cursor:default;padding:14px 0 6px}
+.v3qb details.fsec>summary::before{display:none}
+.v3qb details.fsec>summary .fst{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.v3qb .fsb{padding:0 0 10px}
+.v3qb .frows{gap:5px 12px}
+.v3qb .frows dt{max-width:10.5em}
+.v3qb .v2t th,.v3qb .v2t td{padding-left:6px;padding-right:6px}
+.v3qb .v2t th{font-size:10.5px;letter-spacing:.02em}
+.v3qb .v2t th{white-space:normal;hyphens:auto;-webkit-hyphens:auto}
+.v3qb .v2t td{font-size:13.5px}
+.v3qb>details.fsec{margin-top:0}
+.v3qb>details.fsec:first-child>summary{padding-top:0}
 </style>
 <div id="v3boot" role="status" aria-live="polite"><svg class="v3mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#2c4766"/><path d="M11 28 L32 12 L53 28 Z" fill="#dbe4ef"/><rect x="16" y="28" width="32" height="26" rx="2" fill="#ffffff"/><rect x="21" y="33" width="8" height="7" rx="1.5" fill="#2c4766"/><rect x="35" y="33" width="8" height="7" rx="1.5" fill="#f2c14e"/><rect x="21" y="44" width="8" height="7" rx="1.5" fill="#2c4766"/><rect x="35" y="44" width="8" height="10" rx="1.5" fill="#2c4766"/></svg><b>Insula</b><span class="v3spin" aria-hidden="true"></span><small>Chargement…</small></div><script>setTimeout(function(){var b=document.getElementById("v3boot");if(b)b.remove();},20000)</script>
 <!-- L'interface est construite par src/v2/v2.js. Ici seulement ce qu'elle réutilise : le formulaire d'ajout d'un bien,
@@ -2546,6 +2560,10 @@ function poiBlock(t){const p=poiOf(t); if(!p) return "";
 const adId=suf=>String(suf||"").split("?")[0].split("/").pop();
 const ficx=suf=>FICX[adId(suf)]||null;
 const FD=FICHES||{}, FDL={}, FPRIV=!!ADSRAW.prive;   /* annonces privées : fiches dans Supabase (ADSRAW est remplacé par les annonces reçues, sans ce drapeau) */
+/* une description écrite en capitales (plus de 70 % des lettres) : en minuscules, une majuscule en début de phrase ;
+   les noms propres perdent la leur, mais le texte se lit */
+function phrases(d){const L=d.match(/\p{L}/gu)||[], U=d.match(/\p{Lu}/gu)||[]; if(L.length<40||U.length/L.length<0.7) return d;
+ return d.toLocaleLowerCase("fr-FR").replace(/(^|[.!?]\s+|\n\s*)(\p{L})/gu,(m,a,b)=>a+b.toLocaleUpperCase("fr-FR"));}
 /* undefined : en cours de chargement · null : pas encore relevée */
 function ficheOf(ck,suf){const c=FD[ck]; if(c) return c[adId(suf)]||null; if(FICHES) return null; ficheLoad(ck); return undefined;}
 function ficheLoad(ck){if(FICHES||FDL[ck]||!ck) return; FDL[ck]=1;
@@ -2588,7 +2606,7 @@ function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon
   !loc&&f.frais&&["Frais d'agence",f.frais==="seller"?"à la charge du vendeur":f.frais==="purchaser"?"à la charge de l'acquéreur":esc(f.frais),f.hors&&f.prix&&f.hors<f.prix?`${eur(f.hors)} hors honoraires (${fr((f.prix/f.hors-1)*100,1)} %)`:""],
   (f.pub||f.maj)&&["Annonce",[f.pub&&`en ligne au moins depuis le ${frD(f.pub)}`,f.maj&&`modifiée le ${frD(f.maj)}`].filter(Boolean).join(" · ")],
   f.off&&["Statut","<b>retirée du marché</b> selon Bien'ici"]].filter(Boolean);
- const d=String(f.d||""), cut=d.length>520?d.lastIndexOf(" ",480):-1;
+ const d=phrases(String(f.d||"")), cut=d.length>520?d.lastIndexOf(" ",480):-1;
  /* une longue description : le début, puis « Lire la suite » ouvre la fin seulement (avant, la description entière, et le début s'affichait deux fois) */
  const desc=d?`<div class="fdesc">${esc(cut>0?d.slice(0,cut)+"…":d)}</div>${cut>0?`<details class="fdmore"><summary>Lire la suite</summary><div class="fdesc">…${esc(d.slice(cut).trim())}</div></details>`:""}`:`<p class="sub">Pas de description.</p>`;
  const ph=(f.ph||[]).map((p,i)=>`<a href="${esc(photoFull(suf,p))}" target="_blank" rel="noopener" aria-label="Photo ${i+1} sur ${f.ph.length}, en grand"><img src="${esc(photoUrl(suf,p,360,270))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join("");
@@ -4432,7 +4450,7 @@ render();
    <div class="v2assoc">${A.map((a,i)=>`<div class="v2as"><b>${anom(a,i)} · ${fr(a.part,0)} %</b><div class="v2grid v2f">${fld(i,"nom","Prénom","","",a.nom)}${fld(i,"part","Part du bien","%",5,Math.round(a.part*10)/10)}${fld(i,"revenus","Revenus nets","€/mois",50,Math.round(a.revenus))}${fld(i,"credits","Autres crédits","€/mois",10,Math.round(a.credits))}<div><label for="v2a-${i}-tmi">Tranche d'impôt</label><select id="v2a-${i}-tmi" data-v2as="${i}|tmi">${TMIS.map(t=>`<option value="${t}"${a.tmi===t?" selected":""}>${t} %</option>`).join("")}</select></div>${fld(i,"assur","Assurance de prêt","%/an",0.01,a.assur)}${fld(i,"quot","Quotité assurée","%",10,a.quot)}</div><p class="v2sub">Endettement sur sa part : <b>${x.ratios&&x.ratios[i]!=null?pct(x.ratios[i]*100,0):"n.d."}</b> · cash-flow ${sgn(cfOf(x,i))}/mois (${tyl().toLowerCase()} type à ${esc(c.name)})</p></div>`).join("")}</div>
    <p class="v2sub">Pour la banque, endettement de l'ensemble : <b>${pct(x.ratio*100,0)}</b> (revenus ${eur(H.salaires)}/mois, autres crédits ${eur(H.pretEtud)}/mois).</p></div>`;}
  function assocDetail(x){const A=H.assoc; if(A.length<2) return "";
-  return `<div class="v2sec"><h3>Par associé</h3><div class="v2tw"><table class="v2t v2tight"><thead><tr><th>Associé</th><th class="r">Part</th><th class="r">Mensualité</th><th class="r">Impôt an 1</th><th class="r">Cash-flow</th><th class="r">Endettement</th></tr></thead><tbody>${A.map((a,i)=>`<tr><td>${anom(a,i)}</td><td class="r mono">${fr(a.part,0)} %</td><td class="r mono">${eur(x.mens*a.part/100)}</td><td class="r mono">${eur((x.imps||[])[i]||0)}</td><td class="r mono" style="color:${cfC(cfOf(x,i))}">${sgn(cfOf(x,i))}</td><td class="r mono">${x.ratios&&x.ratios[i]!=null?pct(x.ratios[i]*100,0):"n.d."}</td></tr>`).join("")}</tbody></table></div><p class="v2sub">Par mois, sauf l'impôt (par an). La banque regarde l'endettement de l'ensemble : ${pct(x.ratio*100,0)}.</p></div>`;}
+  return `<div class="v2sec"><h3>Par associé</h3><div class="v2tw"><table class="v2t v2tight"><thead><tr><th>Associé</th><th class="r">Crédit</th><th class="r">Impôt an 1</th><th class="r">Cash-flow</th><th class="r">Endettement</th></tr></thead><tbody>${A.map((a,i)=>`<tr><td>${anom(a,i)}<small class="v2sub" style="display:block;font-size:11.5px">part ${fr(a.part,0)} %</small></td><td class="r mono">${eur(x.mens*a.part/100)}</td><td class="r mono">${eur((x.imps||[])[i]||0)}</td><td class="r mono" style="color:${cfC(cfOf(x,i))}">${sgn(cfOf(x,i))}</td><td class="r mono">${x.ratios&&x.ratios[i]!=null?pct(x.ratios[i]*100,0):"n.d."}</td></tr>`).join("")}</tbody></table></div><p class="v2sub">Par mois (crédit : la part de la mensualité), sauf l'impôt (par an). La banque regarde l'endettement de l'ensemble : ${pct(x.ratio*100,0)}.</p></div>`;}
  function defOf(k){return TYK.includes(k)?typeDefaults(H.type)[k]:HDEF[k];}
  const HOLD=document.createElement("div"); HOLD.hidden=true; HOLD.id="v2hold"; app.appendChild(HOLD);   /* range les blocs de l'app montrés dans une page avant qu'elle ne soit redessinée */
  /* une carte du Projet : son titre et son résumé d'une ligne ; dépliée, ses réglages (ouverte ou fermée : retenu dans ce navigateur) */
@@ -4479,7 +4497,7 @@ render();
 
  /* ---------- fiche unique en onglets ---------- */
  /* les rubriques de la fiche de l'app, et le résumé d'une ligne de chacune (pour « L'essentiel ») */
- function secs(html){const d=document.createElement("div"); d.innerHTML=html; const S={}, sum={}; d.querySelectorAll("details.fsec").forEach(s=>{s.open=true; S[s.dataset.sec]=s.outerHTML; const x=s.querySelector("summary .fss"); if(x&&x.textContent.trim()) sum[s.dataset.sec]=x.innerHTML;}); const at=d.querySelector(".fattn"); return {S,sum,attn:at?at.outerHTML:""};}
+ function secs(html){const d=document.createElement("div"); d.innerHTML=html; const S={}, sum={}; d.querySelectorAll("details.fsec").forEach(s=>{s.open=true; const su=s.querySelector("summary"); if(su) su.setAttribute("tabindex","-1"); S[s.dataset.sec]=s.outerHTML; const x=s.querySelector("summary .fss"); if(x&&x.textContent.trim()) sum[s.dataset.sec]=x.innerHTML;}); const at=d.querySelector(".fattn"); return {S,sum,attn:at?at.outerHTML:""};}
  /* ---------- la fiche, en pleine page et en questions (src/js/48b-questions.js, refonte du 14 novembre 2026) ----------
     En tête : la photo, le titre, trois chiffres (rendement, cash-flow, budget) et ce qu'il faut regarder ; puis les questions
     repliées, chacune avec sa ligne de faits et, ouverte, ses rubriques ; en bas, Suivre et Voir l'annonce. Pas de conclusion :
@@ -4502,7 +4520,7 @@ render();
  /* l'offre est celle de nos biens (visite.offre, la même que dans la grille de visite) : commune à deux ; sur une annonce pas encore suivie, ce n'est qu'un essai */
  function offre(b,id,bb){const P=+b.prix, sv=bb?+((bb.visite||{}).offre)||0:0, pc=OFFT[id]!=null?OFFT[id]:sv?Math.round(sv/P*1000)/10:100, prix=OFFT[id]!=null||!sv?(pc>=100?P:Math.round(P*pc/100/500)*500):sv, y=calcBien(Object.assign({},b,{prix})).x;
   const keep=OFFT[id]!=null&&prix!==sv, cpd=bb&&bb.suivi&&bb.suivi.compromis||"";
-  const rows=[100,97.5,95,92.5,90,87.5,85].map(p=>{const pr=p===100?P:Math.round(P*p/100/500)*500, z=calcBien(Object.assign({},b,{prix:pr})).x; return `<tr${pr===prix?' class="on"':""}><td class="r mono">${eur(pr)}<small class="v2sub" style="display:block;font-size:11.5px">${p===100?"affiché":"−"+fr(100-p,1)+" %"}</small></td><td class="r mono" style="color:${cv(colIrr(z.irr))};font-weight:700">${pctS(z.irr)}</td><td class="r mono" style="color:${cfC(z.cf)}">${sgn(z.cf)}</td><td class="r mono">${eur(z.mens)}</td></tr>`;}).join("");
+  const vus=new Set(), rows=[100,97.5,95,92.5,90,87.5,85].map(p=>{const pr=p===100?P:Math.round(P*p/100/500)*500; if(vus.has(pr)) return ""; vus.add(pr); const z=calcBien(Object.assign({},b,{prix:pr})).x; return `<tr${pr===prix?' class="on"':""}><td class="r mono">${eur(pr)}<small class="v2sub" style="display:block;font-size:11.5px">${p===100?"affiché":"−"+fr(100-p,1)+" %"}</small></td><td class="r mono" style="color:${cv(colIrr(z.irr))};font-weight:700">${pctS(z.irr)}</td><td class="r mono" style="color:${cfC(z.cf)}">${sgn(z.cf)}</td><td class="r mono">${eur(z.mens)}</td></tr>`;}).join("");
   return `<div class="v2sec"><h3>Faire une offre</h3><div class="v2f"><label for="v2off" class="v2offx">Prix proposé : <b class="mono" style="color:var(--fg)">${eur(prix)}</b> (${pc>=100?"prix affiché":"−"+fr(100-pc,1)+" %"})</label><input type="range" id="v2off" min="70" max="100" step="0.5" value="${Math.max(70,Math.min(100,pc))}" data-v2off="${esc(id)}"${bb?` data-v2offb="${esc(bb.id)}"`:""}></div>
    <p class="v2sub v2offx" style="margin:0">${bb?(sv&&!keep?`Offre enregistrée pour ${nous()} : <b class="mono">${eur(sv)}</b>.`:keep?`Lâchez le curseur : l'offre est enregistrée pour ${nous()}.`:`Choisissez un prix : il sera enregistré pour ${nous()}.`):`Essai seulement. <button type="button" class="v2btn sm" data-v2offkeep="${esc(id)}">Garder cette offre (suit le bien)</button>`}</p>
    <div class="v2kp v2offx"><div class="v2k"><span>Rendement 15 ans à ce prix</span><b style="color:${cv(colIrr(y.irr))}">${pctS(y.irr)}</b><small>${scn()}</small></div><div class="v2k"><span>Cash-flow · mensualité</span><b style="color:${cfC(y.cf)}">${sgn(y.cf)}</b><small>mensualité ${eur(y.mens)}</small></div></div>

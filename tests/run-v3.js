@@ -107,7 +107,7 @@ async function mlRoutes(p) {
     // une ville pas encore chargée : la fiche s'ouvre, puis la rubrique se remplit quand le registre arrive
     const s0 = await p.evaluate(() => { const ck = Object.keys(ADS).find(k => !COPROQ[k] && (ADS[k].ventes || []).some(a => { const f = FICHES[k] && FICHES[k][adId(a[3])]; return f && f.lots; })); const a = ADS[ck].ventes.find(a => { const f = FICHES[ck][adId(a[3])]; return f && f.lots; }); return 'v|' + ck + '|' + a[3]; });
     await open(s0); await p.waitForTimeout(1500); const r0 = await sec();
-    ok('copropriété · quand le registre de la ville arrive, la rubrique se remplit (ou disparaît : annonce sans copropriété retrouvée)', !/Recherche de la copropriété/.test(r0.t) && (r0.t === '' || (/^Copropriété/.test(r0.t) && /Registre national d'immatriculation des copropriétés/.test(r0.t))), r0.t.slice(0, 200));
+    ok('copropriété · quand le registre de la ville arrive, la rubrique se remplit (ou disparaît : annonce sans copropriété retrouvée)', !/Recherche de la copropriété/.test(r0.t) && (r0.t === '' || (/^Copropriété/i.test(r0.t) && /Registre national d'immatriculation des copropriétés/.test(r0.t))), r0.t.slice(0, 200));
     const s1 = await p.evaluate(async () => { for (const ck of Object.keys(ADS)) coproData(ck); await new Promise(r => setTimeout(r, 1500));
       for (const ck of Object.keys(ADS)) for (const a of ADS[ck].ventes || []) { const R = coproOf(Object.assign(venteBien(ck, a), {kind: 'v', suf: a[3]})); if (R && R.m && R.m.x) return 'v|' + ck + '|' + a[3]; } return null; });
     await open(s1); await p.waitForTimeout(800); const r1 = await sec();

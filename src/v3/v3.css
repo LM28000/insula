@@ -753,3 +753,17 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
   #v3liste .v2tw>.v2row{max-width:880px}
   .v2fiche .v3fph{max-height:340px}
 }
+
+/* dans une question, les rubriques ne se replient plus : leur titre devient un intertitre, sans retrait (14 novembre 2026) */
+.v3qb details.fsec>summary{pointer-events:none;cursor:default;padding:14px 0 6px}
+.v3qb details.fsec>summary::before{display:none}
+.v3qb details.fsec>summary .fst{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.v3qb .fsb{padding:0 0 10px}
+.v3qb .frows{gap:5px 12px}
+.v3qb .frows dt{max-width:10.5em}
+.v3qb .v2t th,.v3qb .v2t td{padding-left:6px;padding-right:6px}
+.v3qb .v2t th{font-size:10.5px;letter-spacing:.02em}
+.v3qb .v2t th{white-space:normal;hyphens:auto;-webkit-hyphens:auto}
+.v3qb .v2t td{font-size:13.5px}
+.v3qb>details.fsec{margin-top:0}
+.v3qb>details.fsec:first-child>summary{padding-top:0}
