@@ -4717,7 +4717,10 @@ render();
  document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-v2tab],[data-v3nav],[data-v2scn],[data-v2vue],[data-v2sort],[data-v2more],[data-v2star],[data-v2vote],[data-v2ft],[data-v3go],[data-v3carte],[data-v2close],[data-v2crit],[data-v2min],[data-v2nom],[data-v2share],[data-v2city],[data-v2open],[data-v2cfiche],[data-v2photos],[data-v2gonew],[data-v2reset],[data-v2offkeep],[data-v2csort],[data-v2add],[data-v2addx],[data-v2cmpx],[data-v2nas],[data-v2tous],[data-v2theme],[data-v2nav],[data-v2lien],[data-v2grp],[data-v2inv],[data-v2guide],[data-v2ret],[data-v2tipx],[data-v3view],[data-v3obj],[data-v3bst],[data-v3showcode],[data-v3onmap],[data-type]"); if(!t||!app.contains(t)&&!t.closest(".v2dlg")) return; const d=t.dataset;
   if(d.v3nav){V.tab="explorer"; V.sel=null; RET=null; if(d.v3nav==="villes"){V.city=null; LCITY=null; V.obj="villes";} else V.obj="annonces"; V.n=60; save(); show(); return;}
   if(d.v2tab!=null){e.preventDefault(); if(d.v2tab==="reglages"&&V.tab!=="reglages") V.prev=V.tab; V.tab=TABS.some(x=>x[0]===d.v2tab)?d.v2tab:"explorer"; save(); show(); return;}
-  if(d.v3view){V.view=d.v3view; V.n=60; save(); show(); return;}
+  if(d.v3view){V.view=d.v3view; V.n=60; RET=null;   /* vue choisie à la main : fermer la fiche la garde */
+   /* vers la carte avec la fiche d'une ville ou d'un quartier ouverte (liste des villes de l'Ouest) : la carte s'ouvre sur cette ville */
+   if(d.v3view==="carte"&&V.sel&&/^[cq]\|/.test(V.sel)){const ck=V.sel.split("|")[1]; if(ck&&V.city!==ck){V.city=ck; LCITY=undefined;}}
+   save(); show(); return;}
   if(d.v3obj){V.obj=d.v3obj; V.n=60; save(); show(); return;}
   if(d.v3bst){V.bst=d.v3bst; save(); refresh(); return;}
   if(d.v3showcode!=null){const i=$("v2code"); if(!i) return; const sh=i.type==="password"; i.type=sh?"text":"password"; t.setAttribute("aria-pressed",String(sh)); t.textContent=sh?"Masquer":"Afficher"; return;}

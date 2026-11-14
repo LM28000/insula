@@ -605,6 +605,13 @@ async function mlRoutes(p) {
       const d2 = await p.evaluate(() => document.getElementById('v2app').dataset.view);
       ok('insula ordi · « Voir sur la carte » depuis la vue Liste : la fiche à gauche de la carte, sur l\'annonce ; fermée, retour à la liste', d1.view === 'carte' && d1.gauche && d1.z > 12 && d2 === 'liste', JSON.stringify({d1, d2}));
       await p.evaluate(() => __cl('[data-v3view="carte"]')); await p.waitForTimeout(500);
+      // fiche d'une ville ouverte depuis la liste des villes, puis « Carte » : la carte s'ouvre sur cette ville ; fermer la fiche y reste
+      await p.evaluate(() => { __cl('[data-v3view="liste"]'); if (document.querySelector('#v3scope [data-v2city=""]')) __cl('#v3scope [data-v2city=""]'); __cl('[data-v3obj="villes"]'); }); await p.waitForTimeout(500);
+      await p.evaluate(() => __cl('#v3liste [data-v2open="c|tours"]')); await p.waitForTimeout(800); await p.evaluate(() => __cl('[data-v3view="carte"]')); await p.waitForTimeout(2500);
+      const vc = await p.evaluate(() => ({city: V2CITY(), z: V2MAP().getZoom()})); await p.evaluate(() => __cl('#v2fiche [data-v2close]')); await p.waitForTimeout(800);
+      const vf = await p.evaluate(() => ({city: V2CITY(), view: document.getElementById('v2app').dataset.view}));
+      ok('insula ordi · fiche d\'une ville puis « Carte » : la carte s\'ouvre sur la ville et y reste une fois la fiche fermée', vc.city === 'tours' && vc.z > 10 && vf.city === 'tours' && vf.view === 'carte', JSON.stringify({vc, vf}));
+      await p.evaluate(() => __cl('#v3scope [data-v2city=""]')); await p.waitForTimeout(1200);
     }
     if (dev === 'tel') {   // la liste et la fiche se tirent au doigt par leur en-tête ; plus de bouton « Réduire »
       const tire = (sel, dy) => p.evaluate(([sel, dy]) => { const h = document.querySelector(sel), r = h.getBoundingClientRect(), o = {bubbles: true, clientX: r.left + 120, clientY: r.top + 12, pointerId: 3};
