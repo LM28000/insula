@@ -8,6 +8,8 @@ Les grandes étapes du site. Le détail de chaque changement est dans l'historiq
 - « Gagnant après N ans » si l'on revend : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et ce qu'on a sorti de notre poche.
 - Sur téléphone : la liste des annonces est l'accueil, la carte un bouton ; menu du bas Annonces, Villes, Nos biens, Projet ; Réglages sous le rond ; la fiche s'ouvre en pleine page, sans panneau à tirer.
 - La fiche d'une ville mène à ses annonces pour nos critères et liste ses quartiers, du plus rentable au moins rentable.
+- Sur ordinateur : le tableau des annonces est l'accueil, la carte un bouton ; une fiche ouverte se place à droite, la liste passe en lignes compactes ; une ville de la liste ouvre sa fiche, et ‹ › passent d'une ville à l'autre.
+- « Première visite ? » est en tête de la liste.
 - La description d'une annonce ne s'affiche plus en double.
 
 ## 12 novembre 2026 — Insula devient le site

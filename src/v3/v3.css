@@ -744,3 +744,12 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
   .v2fiche .v2fh{padding-top:max(10px,env(safe-area-inset-top,0px))}
   .v2fiche{padding-top:0}
 }
+
+/* ---------- ordinateur : la liste à gauche, la fiche à droite (14 novembre 2026) ----------
+   Fiche ouverte : la liste passe en lignes compactes (celles du téléphone), la fiche s'élargit sur un grand écran. */
+@media (min-width:861px){
+  #v2app:not(.v3fmap) .v2fiche{width:min(600px,44vw)}
+  #v2app:not(.v3fmap) .v2fiche:not([hidden])~* .v2in,#v3liste .v2in{max-width:none}
+  #v3liste .v2tw>.v2row{max-width:880px}
+  .v2fiche .v3fph{max-height:340px}
+}

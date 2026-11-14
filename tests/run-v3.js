@@ -48,6 +48,7 @@ async function mlRoutes(p) {
     await p.route('**/cdnjs.cloudflare.com/**', r => r.abort()); await mlRoutes(p);
     p.on('request', r => { const u = r.url(); if (u.includes('openfreemap.org/styles/')) styles.push(u.split('/').pop()); });
     await p.goto(URL); await p.waitForTimeout(2000); await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(1200);
+    await p.evaluate(() => __tab('carte')); await p.waitForTimeout(1500);   // la carte, derrière son bouton
     const fond = () => p.evaluate(() => getComputedStyle(document.body).backgroundColor);
     ok('thème · clair par défaut, même avec un appareil en sombre', await p.evaluate(() => document.documentElement.getAttribute('data-theme') === 'light') && await fond() === 'rgb(238, 241, 245)' && styles[0] === 'positron', (await fond()) + ' ' + styles.join(','));
     await p.evaluate(() => __tab('reglages')); await p.waitForTimeout(300); await p.evaluate(() => __cl('#v2p-reglages [data-v2theme="dark"]')); await p.evaluate(() => __tab('carte')); await p.waitForTimeout(1500);
@@ -75,9 +76,9 @@ async function mlRoutes(p) {
     const cr = await p.evaluate(() => { const c = document.querySelector('.v2dlg .v2couv'), B = document.getElementById('v2cB'); B.value = 200000; B.dispatchEvent(new Event('input')); const w = document.getElementById('v2cW'); return {c: c && c.innerText, w: !!w && !w.hidden}; });
     ok('critères : ce que couvre le relevé (villes, types, plafond de prix) ; budget au-delà du plafond signalé', /22 villes de l'Ouest, studios, T2 et T3, jusqu'à 120 k€/.test(cr.c) && cr.w, JSON.stringify(cr));
     await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(800);
-    const t0 = await p.evaluate(() => !!document.querySelector('#v2mlist .v2tip [data-v2guide]')); await p.evaluate(() => __cl('#v2mlist .v2tip [data-v2guide]')); await p.waitForTimeout(300);
+    const t0 = await p.evaluate(() => !!document.querySelector('#v3liste .v2tip [data-v2guide]')); await p.evaluate(() => __cl('#v3liste .v2tip [data-v2guide]')); await p.waitForTimeout(300);
     const g = await p.evaluate(() => [...document.querySelectorAll('.v2guide h3')].map(h => h.textContent)); await p.evaluate(() => __cl('.v2guide [data-v2cx]')); await p.waitForTimeout(300);
-    const t1 = await p.evaluate(() => !!document.querySelector('#v2mlist .v2tip'));
+    const t1 = await p.evaluate(() => !!document.querySelector('#v3liste .v2tip, #v2mlist .v2tip'));
     ok('première visite : « Comment lire l\'app » en tête de la liste, cinq rubriques, ne revient plus une fois lu', t0 && g.length === 5 && /Explorer/.test(g[0]) && /couvre/.test(g[4]) && !t1, JSON.stringify({t0, g, t1}));
     await p.evaluate(() => __tab('reglages')); await p.waitForTimeout(500); await p.fill('#v2nom2', 'Louis');
     await Promise.all([p.waitForNavigation({timeout: 15000}).catch(() => {}), p.evaluate(() => __cl('[data-v2grp]'))]); await p.waitForTimeout(2500);
@@ -191,6 +192,8 @@ async function mlRoutes(p) {
         ok('insula tel · accueil : la liste des annonces, menu du bas Annonces · Villes · Nos biens · Projet, réglages sous le rond', await p.evaluate(() => document.getElementById('v2app').dataset.view === 'liste' && [...document.querySelectorAll('#v2tabbar button')].map(b => b.innerText.trim()).join() === 'Annonces,Villes,Nos biens,Projet' && document.querySelectorAll('#v3liste [data-v2open^="v|"]').length > 0 && !!document.querySelector('#v3scope .v3avp')),
           await p.evaluate(() => [document.getElementById('v2app').dataset.view, [...document.querySelectorAll('#v2tabbar button')].map(b => b.innerText.trim()).join()].join(' | ')));
         await p.evaluate(() => { __cl('[data-v3nav="villes"]'); __cl('[data-v3view="carte"]'); }); await p.waitForTimeout(1500); }
+      else { ok('insula ordi · accueil : le tableau des annonces pour nos critères', await p.evaluate(() => document.getElementById('v2app').dataset.view === 'liste' && document.querySelectorAll('#v3liste tr[data-v2open^="v|"]').length > 10));
+        await p.evaluate(() => { __cl('[data-v3view="carte"]'); __cl('[data-v3obj="villes"]'); }); await p.waitForTimeout(1500); }
       ok(`insula ${dev} · carte de l'Ouest et ses 22 villes`, await p.evaluate(() => !!(window.V2MAP && V2MAP()) && V2MAPN.villes === C.length && document.querySelectorAll('#v2mlist [data-v2city]').length === C.length && C.length === 22));
       ok(`insula ${dev} · carte : toutes les couches acceptées (quartiers, annonces, villes, immeubles 3D)`, await p.evaluate(() => { const M = V2MAP(); return ['q-fill', 'q-line', 'q-lab', 'a-dot', 'a-hole', 'a-zone', 'a-clu', 'a-clu-n', 'a-sdot', 'a-shole', 'v-dot', 'v-lab', 'b3d', 'p-rail', 'p-rail2', 'p-rfn', 'p-rfn2', 'p-lig', 'p-dot'].every(l => M.getLayer(l)) && V2MAPN.err.length === 0; }), await p.evaluate(() => V2MAPN.err.join(' | ')));
       ok(`insula ${dev} · carte de l'Ouest : les grandes lignes de train sont dessinées (grande vitesse et 140 km/h et plus)`, await p.evaluate(() => { const M = V2MAP(); return M.getZoom() < 8 && M.queryRenderedFeatures({layers: ['p-rfn2']}).length > 0 && M.queryRenderedFeatures({layers: ['p-rfn']}).length > 0; }));
@@ -386,7 +389,7 @@ async function mlRoutes(p) {
         ok(`insula ${dev} · téléphone : filtres sur une ligne`, await p.evaluate(() => getComputedStyle(document.querySelector('#v3liste .v2chips')).flexWrap === 'nowrap'));
       }
       await p.evaluate(() => __tab('villes')); await p.waitForTimeout(400);
-      ok(`insula ${dev} · villes`, await p.evaluate(() => document.querySelectorAll('#v3liste [data-v2city]').length === C.length));
+      ok(`insula ${dev} · villes`, await p.evaluate(() => document.querySelectorAll('#v3liste [data-v2open^="c|"]').length === C.length));
       ok(`insula ${dev} · villes : rien ne déborde en largeur`, await p.evaluate(() => { const t = document.querySelector('#v3liste .v2tw'); return t && t.scrollWidth <= t.clientWidth + 1; }));
       await p.evaluate(() => __tab('budget')); await p.waitForTimeout(300);
       await p.evaluate(() => { const i = document.getElementById('v2h-apport'); i.value = '20000'; i.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(400);
@@ -407,8 +410,7 @@ async function mlRoutes(p) {
           R = R.filter(o => o.w > 0).sort((a, b) => (a.v ?? -1e9) - (b.v ?? -1e9)); const T = R.reduce((s, o) => s + o.w, 0); let s = 0, m = R[R.length - 1];
           for (const o of R) { s += o.w; if (s >= T / 2) { m = o; break; } } return calcVille(c).irr === m.v; })));
         await p.evaluate(() => __tab('villes')); await p.waitForTimeout(300);
-        await p.evaluate(() => __cl('#v3liste [data-v2city="lemans"]')); await p.waitForTimeout(800);
-        await p.evaluate(() => __cl('#v3scope [data-v2cfiche="lemans"]')); await p.waitForTimeout(800);
+        await p.evaluate(() => __cl('#v3liste [data-v2open="c|lemans"]')); await p.waitForTimeout(800);   // une ville de la liste : sa fiche
         { const tx = async () => { await p.evaluate(() => __qall()); await p.waitForTimeout(300); return p.evaluate(() => (document.getElementById('v2fiche') || {}).textContent || ''); };
           const tp = await tx(), tc = tp;
           ok('insula · fiche d\'une ville : hausse des prix retenue, prix depuis 2014 et mois vides de la ville', /Hausse des prix retenue/.test(tp) && /Appartements anciens/.test(tp) && /Mois vides retenus/.test(tc), tp.slice(0, 120) + ' | ' + tc.slice(0, 120)); }
@@ -533,10 +535,10 @@ async function mlRoutes(p) {
     await p.goto(URL); await p.waitForTimeout(2000); await p.click('.v2dlg button[type=submit]'); await p.waitForTimeout(1200);
     const vis = s => `(e => !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0)(document.querySelector('${s}'))`;
     const s0 = await p.evaluate(v => ({nav: [...document.querySelectorAll('#v2tabs [data-v2tab]')].map(b => b.textContent.replace(/\d+$/, '').trim()), bar: [...document.querySelectorAll('#v2tabbar button')].map(b => b.dataset.v2tab || b.dataset.v3nav), av: eval(v[0]), barre: eval(v[1]), titre: document.title, scope: !document.getElementById('v3scope').hidden, vue: document.getElementById('v2app').dataset.view}), [vis('#v3av'), vis('#v2tabbar')]);
-    ok(`insula ${dev} · quatre espaces : Explorer (en carte), Nos biens et Projet en haut avec le rond de Réglages (ordinateur) ; Annonces (en liste), Villes, Nos biens, Projet en bas (téléphone)`, s0.titre === 'Insula' && s0.scope && (dev === 'ordi' ? s0.vue === 'carte' && s0.nav.join() === 'Explorer,Nos biens,Projet' && s0.av && !s0.barre : s0.vue === 'liste' && s0.bar.join() === 'annonces,villes,biens,projet' && !s0.av && s0.barre), JSON.stringify(s0));
+    ok(`insula ${dev} · quatre espaces : Explorer (en liste), Nos biens et Projet en haut avec le rond de Réglages (ordinateur) ; Annonces (en liste), Villes, Nos biens, Projet en bas (téléphone)`, s0.titre === 'Insula' && s0.scope && (dev === 'ordi' ? s0.vue === 'liste' && s0.nav.join() === 'Explorer,Nos biens,Projet' && s0.av && !s0.barre : s0.vue === 'liste' && s0.bar.join() === 'annonces,villes,biens,projet' && !s0.av && s0.barre), JSON.stringify(s0));
     // Explorer : villes ou annonces, en liste ou en graphique, avec la même barre du périmètre
     await p.evaluate(() => { __cl('[data-v3view="liste"]'); if (document.querySelector('[data-v3nav="villes"]')) __cl('[data-v3nav="villes"]'); }); await p.waitForTimeout(400);
-    const l1 = await p.evaluate(() => ({carte: !document.getElementById('v2map').parentNode.hidden, liste: !document.getElementById('v3liste').hidden, villes: document.querySelectorAll('#v3liste [data-v2city]').length}));
+    const l1 = await p.evaluate(() => ({carte: !document.getElementById('v2map').parentNode.hidden, liste: !document.getElementById('v3liste').hidden, villes: document.querySelectorAll('#v3liste [data-v2open^="c|"]').length}));
     await p.evaluate(() => __cl(document.querySelector('[data-v3nav="annonces"]') ? '[data-v3nav="annonces"]' : '[data-v3obj="annonces"]')); await p.waitForTimeout(400);
     const l2 = await p.evaluate(() => ({n: document.querySelectorAll('#v3liste [data-v2open^="v|"]').length, chips: [...document.querySelectorAll('#v3liste [data-v2vue]')].map(b => b.dataset.v2vue).join()}));
     await p.evaluate(() => __cl('[data-v3view="graph"]')); await p.waitForTimeout(400);
