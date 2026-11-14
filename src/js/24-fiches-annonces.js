@@ -53,9 +53,10 @@ function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon
   (f.pub||f.maj)&&["Annonce",[f.pub&&`en ligne au moins depuis le ${frD(f.pub)}`,f.maj&&`modifiée le ${frD(f.maj)}`].filter(Boolean).join(" · ")],
   f.off&&["Statut","<b>retirée du marché</b> selon Bien'ici"]].filter(Boolean);
  const d=String(f.d||""), cut=d.length>520?d.lastIndexOf(" ",480):-1;
- const desc=d?`<div class="fdesc">${esc(cut>0?d.slice(0,cut)+"…":d)}</div>${cut>0?`<details class="fdmore"><summary>Lire toute la description</summary><div class="fdesc">${esc(d)}</div></details>`:""}`:`<p class="sub">Pas de description.</p>`;
+ /* une longue description : le début, puis « Lire la suite » ouvre la fin seulement (avant, la description entière, et le début s'affichait deux fois) */
+ const desc=d?`<div class="fdesc">${esc(cut>0?d.slice(0,cut)+"…":d)}</div>${cut>0?`<details class="fdmore"><summary>Lire la suite</summary><div class="fdesc">…${esc(d.slice(cut).trim())}</div></details>`:""}`:`<p class="sub">Pas de description.</p>`;
  const ph=(f.ph||[]).map((p,i)=>`<a href="${esc(photoFull(suf,p))}" target="_blank" rel="noopener" aria-label="Photo ${i+1} sur ${f.ph.length}, en grand"><img src="${esc(photoUrl(suf,p,360,270))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join("");
- return `${ph?`<div class="fgal">${ph}</div>`:""}${desc}${rows.length?fRows(rows):""}${iaHtml(f,ck,suf)}<p class="sub" style="margin:6px 0 0">Fiche relevée sur Bien'ici le ${frD(f.lu)}.</p>`;}
+ return `${ph?`<div class="fgal">${ph}</div>`:""}${rows.length?fRows(rows):""}${desc}${iaHtml(f,ck,suf)}<p class="sub" style="margin:6px 0 0">Fiche relevée sur Bien'ici le ${frD(f.lu)}.</p>`;}
 function ficheSum(f,suf){if(f===undefined) return "chargement…"; if(!f) return "pas encore relevée"; const n=(f.ph||[]).length, x=suf?dpeAJ(suf):null;
  return [f.d&&"description",n&&`${n} photo${n>1?"s":""}`,f.dpe&&`DPE ${x?x.dpe+" (annoncé "+f.dpe+")":f.dpe}`,(copAn(f)||copAn(ficx(suf)||{}))&&`${eur((copAn(f)||copAn(ficx(suf)))/12)}/mois de copro`,f.coloc&&"colocation"].filter(Boolean).join(" · ");}
 /* rubrique « L'annonce » des fiches (ordinateur et téléphone) */
