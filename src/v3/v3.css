@@ -767,3 +767,15 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
 .v3qb .v2t td{font-size:13.5px}
 .v3qb>details.fsec{margin-top:0}
 .v3qb>details.fsec:first-child>summary{padding-top:0}
+
+/* menus de la liste (ville des annonces, tri), comme dans l'app : sur une ligne quand la place le permet */
+.v3tools{display:flex;gap:8px 16px;flex-wrap:wrap;margin:0 0 10px}
+.v3tools .v2sortm{flex:1 1 220px;margin:0;max-width:360px}
+@media (min-width:861px){.v3tools .v2sortm select{min-height:38px;font-size:14px}}
+@media (max-width:860px){
+  .v3tools{flex-wrap:nowrap;gap:8px}
+  .v3tools .v2sortm{flex:1 1 0;min-width:0;max-width:none}
+  .v3tools .v2sortm>span{display:none}   /* le menu dit lui-même ce qu'il règle (« Toutes les villes », « Rendement, le plus haut ») */
+  .v3tools .v2sortm select{min-height:42px;padding:0 6px 0 10px;font-size:16px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+}
+@media (max-width:860px){.v3tools .v2sortm select{width:100%;min-width:0;flex:1 1 0}}

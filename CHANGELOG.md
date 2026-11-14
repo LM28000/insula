@@ -10,6 +10,7 @@ Les grandes étapes du site. Le détail de chaque changement est dans l'historiq
 - La fiche d'une ville mène à ses annonces pour nos critères et liste ses quartiers, du plus rentable au moins rentable.
 - Sur ordinateur : le tableau des annonces est l'accueil, la carte un bouton ; une fiche ouverte se place à droite, la liste passe en lignes compactes ; une ville de la liste ouvre sa fiche, et ‹ › passent d'une ville à l'autre.
 - « Première visite ? » est en tête de la liste.
+- Comme dans l'app : la ville des annonces et le tri dans des menus, sur téléphone comme sur ordinateur ; les villes se trient aussi par un menu (rendement, cash-flow, budget, annonces pour nos critères, Paris, étudiants, loyer).
 - Dans une question, les rubriques ne se replient plus : un intertitre, sans retrait ; tableaux resserrés (« Par associé » tient sur un téléphone) ; les offres arrondies au même prix ne font qu'une ligne ; une description écrite en capitales est remise en phrases.
 - La description d'une annonce ne s'affiche plus en double.
 

@@ -370,6 +370,15 @@ async function mlRoutes(p) {
         const prix = () => p.evaluate(() => [...document.querySelectorAll('#v3liste .v2row > b')].slice(0, 6).map(b => parseFloat(b.textContent.replace(',', '.'))));
         await p.evaluate(() => { const s = document.querySelector('#v3liste [data-v2sortm]'); s.value = 'p|1'; s.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(500);
         const pr = await prix(); ok('insula tel · Annonces : tri par prix, le moins cher d\'abord', pr.length > 3 && pr.every((v, i) => !i || v >= pr[i - 1]), pr.join());
+        // comme dans l'app : la ville des annonces dans un menu ; les villes triées par un menu
+        await p.evaluate(() => { const s = document.querySelector('#v3liste [data-v3city]'); s.value = 'rennes'; s.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(600);
+        const vm = await p.evaluate(() => { const K = [...document.querySelectorAll('#v3liste [data-v2open^="v|"]')].map(e => e.dataset.v2open); return {city: V2CITY(), n: K.length, ok: K.every(k => k.startsWith('v|rennes|')), sel: document.querySelector('#v3liste [data-v3city]').value}; });
+        ok('insula tel · Annonces : la ville se choisit dans un menu, la liste ne montre qu\'elle', vm.city === 'rennes' && vm.n > 0 && vm.ok && vm.sel === 'rennes', JSON.stringify(vm));
+        await p.evaluate(() => { __cl('[data-v3nav="villes"]'); }); await p.waitForTimeout(500);
+        await p.evaluate(() => { const s = document.querySelector('#v3liste [data-v3csortm]'); s.value = 'paris|1'; s.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(500);
+        const vp = await p.evaluate(() => [...document.querySelectorAll('#v3liste [data-v2open^="c|"]')].map(e => C.find(c => 'c|' + c.k === e.dataset.v2open).paris));
+        ok('insula tel · Villes : triées par un menu (ici : le plus près de Paris)', vp.length === 22 && vp.every((v, i) => !i || (v ?? 1e9) >= (vp[i - 1] ?? 1e9)), vp.join());
+        await p.evaluate(() => { const s = document.querySelector('#v3liste [data-v3csortm]'); s.value = 'irr|-1'; s.dispatchEvent(new Event('change', {bubbles: true})); __cl('[data-v3nav="annonces"]'); const c = document.querySelector('#v3liste [data-v3city]'); if (c) { c.value = ''; c.dispatchEvent(new Event('change', {bubbles: true})); } }); await p.waitForTimeout(600);
         await p.evaluate(() => { const s = document.querySelector('#v3liste [data-v2sortm]'); s.value = 'irr|-1'; s.dispatchEvent(new Event('change', {bubbles: true})); }); await p.waitForTimeout(400);
         await p.evaluate(() => __tab('biens')); await p.waitForTimeout(500);
         ok('insula tel · Nos biens : des lignes, pas un tableau', await p.evaluate(() => !document.querySelector('#v2p-biens table') && document.querySelectorAll('#v2p-biens .v2brow').length === BIENS.filter(b => !isOut(b)).length), await p.evaluate(() => BIENS.length + ' biens, ' + document.querySelectorAll('#v2p-biens .v2brow').length + ' lignes'));
