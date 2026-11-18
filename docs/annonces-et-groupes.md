@@ -49,7 +49,8 @@ Les protections sont posées dans la base, pas dans la page :
 
 - la page envoie le code dans l'en-tête `x-groupe`. La base n'en garde que l'empreinte SHA-256 et ne montre que les lignes de ce groupe ;
 - un code de moins de 12 caractères ne donne aucune empreinte : rien n'est lisible ni écrit sans un vrai code ;
-- un groupe a au plus 500 biens. La forme et la taille des écritures sont bornées. La date de modification est posée par la base ;
+- un groupe a au plus 500 biens et 5 Mo. La forme et la taille des écritures sont bornées. La date de modification est posée par la base ;
+- au plus 10 nouveaux groupes par 24 heures et 50 au total (compteur fermé `biens_groupes`, étape 6 de `supabase.sql`) : des codes inventés ne peuvent plus remplir la base. Un groupe existant n'est jamais gêné, mais un inconnu peut occuper les places libres ; un nouveau foyer reçoit alors « pas de nouveau groupe possible pour le moment ». Pour libérer des places, dans SQL Editor : `select groupe, cree, nb, octets from public.biens_groupes order by cree desc;` puis `delete from public.biens where groupe = '<empreinte>';` pour chaque groupe inconnu (jamais le nôtre : c'est le `groupe` qu'on retrouve dans `public.annonces`) ;
 - seul le groupe qui a déjà des annonces peut en ajouter.
 
 ## Les groupes
