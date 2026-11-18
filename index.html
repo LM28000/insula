@@ -1721,6 +1721,8 @@ const tyPl=k=>{const s=tyOf(k||H.type).pl; return s.charAt(0).toUpperCase()+s.sl
 const FISC={abatMicro:0.5, ps:18.6, pvIR:19, pvPS:17.2, terrain:0.15, ansBati:30, ansMeubles:7, ansTravaux:10, fraisForfait:7.5, abatFoncier:0.3, psFoncier:17.2};   /* revenus fonciers (bail vide en cours d'un bien vendu loué) : micro-foncier, prélèvements sociaux hors hausse de la LFSS 2026 */
 const FIN0={garantie:1.0, assurA:0.20, quotA:100, assurB:0.20, quotB:100, tmiA:0, tmiB:0, regime:"auto", cfe:100, compta:150, partA:50, net:true, nomA:"", nomB:""};
 Object.assign(H,FIN0); Object.assign(HDEF,FIN0);
+/* réglages du financement venus d'ailleurs (ligne commune, copie locale) : le régime n'est que l'un des trois connus, garantie, CFE et comptable sont des nombres */
+const finOk=(k,v)=>k==="regime"?["auto","micro","reel"].includes(v):["garantie","cfe","compta"].includes(k)?typeof v==="number"&&isFinite(v):true;
 /* ---------- associés : de 1 à 6 personnes qui achètent ensemble ----------
    Chacune a sa part du bien (part des loyers, des charges, de la mensualité et de l'impôt), ses revenus, ses autres crédits,
    sa tranche d'impôt et son assurance de prêt (taux et quotité). La banque regarde l'endettement de l'ensemble ; celui de chacun
@@ -1739,7 +1741,7 @@ function assocFromLegacy(h){if(!h||!Array.isArray(H.assoc)) return; const A=H.as
  sc("salaires","revenus"); sc("pretEtud","credits"); if(h.tmiA!=null&&A[0]) A[0].tmi=+h.tmiA; if(h.tmiB!=null&&A[1]) A[1].tmi=+h.tmiB; assocNorm();}
 (function(){try{const s=JSON.parse(localStorage.getItem("fin")||"null"); if(s){
   if(!s.v2){if(s.tmiB===11) delete s.tmiB; if(s.compta===300) delete s.compta; if(s.cfe===200) delete s.cfe;} // anciens réglages par défaut
-  ["garantie","assurA","quotA","assurB","quotB","tmiA","tmiB","regime","cfe","compta","nomA","nomB"].forEach(k=>{if(s[k]!=null) H[k]=s[k];});
+  ["garantie","assurA","quotA","assurB","quotB","tmiA","tmiB","regime","cfe","compta","nomA","nomB"].forEach(k=>{if(s[k]!=null&&finOk(k,s[k])) H[k]=s[k];});
   if(Array.isArray(s.assoc)) H.assoc=s.assoc;}
  const m=localStorage.getItem("chiffres"); if(m) H.net=m!=="brut";}catch(_){}
  /* première fois : les deux personnes d'avant deviennent deux associés, mêmes chiffres (revenus du foyer partagés selon la part) */
@@ -2136,7 +2138,10 @@ function normBien(id,raw){/* avis à deux (v2) : {prénom: "o" garder | "m" à v
   short:typeof r.short==="boolean"?r.short:undefined,votes:votesOf(r.votes),suivi:obj(r.suivi),adresse:str(r.adresse,200),visite:obj(r.visite),geo:obj(r.geo),by:str(r.by,80),maj:obj(r.maj)};
  Object.keys(b).forEach(k=>{if(b[k]===undefined) delete b[k];});
  if(TYPES[r.type]) b.type=r.type; if(+r.pieces>0) b.pieces=num(r.pieces); if(isFinite(+r.lat)&&r.lat!=null) b.lat=+r.lat; if(isFinite(+r.lon)&&r.lon!=null) b.lon=+r.lon;
- if(b.geo&&b.geo.foot&&!Array.isArray(b.geo.foot)) delete b.geo.foot;
+ /* trajets à pied à l'adresse (47-adresse.js) : rien que des nombres et des repères connus, gardés alignés entre eux */
+ if(b.geo){const g=Object.assign({},b.geo), F=Array.isArray(g.foot)?g.foot:[], K=Array.isArray(g.km)?g.km:[], M=Array.isArray(g.marks)?g.marks:[], isN=v=>typeof v==="number"&&isFinite(v);
+  const I=F.map((_,i)=>i).filter(i=>isN(F[i])&&isN(K[i])&&typeof M[i]==="string"&&/^(gare|univ|centre)\d{0,2}$/.test(M[i]));
+  delete g.foot; delete g.km; delete g.marks; if(I.length){g.foot=I.map(i=>F[i]); g.km=I.map(i=>K[i]); g.marks=I.map(i=>M[i]);} b.geo=g;}
  if(!okV||sid!==String(id)||!(b.prix>0)||!(b.surface>0)){b.bad=true; b.titre="⚠ Bien illisible"+(b.titre?" : "+b.titre:""); if(!(b.surface>0)) b.surface=22; if(!(b.prix>0)) b.prix=1;}
  return b;}
 /* années de bail restantes : fin écrite dans l'annonce (« AAAA » = milieu d'année), sinon 3 ans (durée d'un bail vide) */
@@ -2328,7 +2333,7 @@ function regApply(d,first){const ch=[];
  REGIN=true;
  try{
   if(d.hyp&&typeof d.hyp==="object") HYPK.forEach(k=>{if(typeof d.hyp[k]==="number") setK(k,d.hyp[k]);});
-  if(d.fin&&typeof d.fin==="object") FINK.forEach(k=>{const v=d.fin[k]; if(typeof v==="number"||(typeof v==="string"&&v.length<=40)) setK(k,v);});
+  if(d.fin&&typeof d.fin==="object") FINK.forEach(k=>{const v=d.fin[k]; if(finOk(k,v)) setK(k,v);});
   if(d.fin&&Array.isArray(d.fin.assoc)&&d.fin.assoc.length){const A=assocClean(d.fin.assoc); if(canon(A)!==canon(H.assoc)){H.assoc=A; assocNorm(); ch.push("assoc");}}
   else if(d.fin&&d.fin.tmiA!=null){   /* réglages communs d'avant les associés : les deux personnes reconstruites (prénoms, parts, tranches, assurances) */
    const F=d.fin, h=d.hyp||{}, pa=Math.min(100,Math.max(0,+F.partA||50)), sal=+h.salaires||H.salaires, cr=+h.pretEtud||0;
@@ -2508,7 +2513,7 @@ function liqRows(ck){const S=liqStock(ck), L=liqVille(ck), R=[];
 /* ---------- données réelles par quartier : ventes DVF, trajets à pied / vélo, risques Géorisques ---------- */
 const MKFULL=mkMap({gare:"la gare",univ:"l'université",centre:"le centre"});
 const mois=s=>{const [y,m]=s.split("-"); return ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."][+m-1]+" "+y;};
-const minTxt=m=>m>=60?`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`:`${m} min`;
+const minTxt=m=>typeof m!=="number"||!isFinite(m)?"":m>=60?`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`:`${m} min`;
 function dvfOf(t){const D=dvfC(t.ck); return D?D.q[t.code]||null:null;}
 function risqOf(t){return typeof RISQ!=="undefined"&&RISQ[t.ck]?RISQ[t.ck][t.code]||null:null;}
 function trajOf(t){const T=typeof TTQ!=="undefined"&&TTQ[t.ck]; if(!T||!T.foot[t.code]) return null; const X=typeof TCQ!=="undefined"&&TCQ[t.ck], xq=X&&X.q[t.code];
@@ -3383,7 +3388,7 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 function adrBlock(b){if(!b.adresse) return `<div class="adrbox"><button type="button" class="lnk" data-adredit="${b.id}">📍 Ajouter l'adresse exacte</button></div>`;
  const g=b.geo||{}, R=g.risq;
  return `<div class="adrbox"><p class="sub" style="margin:0 0 4px">📍 <b>${esc(b.adresse)}</b> <button type="button" class="lnk" data-adredit="${b.id}">modifier</button></p>
-  ${g.foot?`<div class="trajb">${g.marks.map((k,i)=>`<span class="traj"><b>${MARKTXT[k]}</b> ${minTxt(g.foot[i])} à pied (${fr(g.km[i],1)} km)</span>`).join("")}</div>`:""}</div>`;}
+  ${g.foot?`<div class="trajb">${g.marks.map((k,i)=>`<span class="traj"><b>${esc(MARKTXT[k])}</b> ${esc(minTxt(g.foot[i]))} à pied (${esc(fr(g.km[i],1))} km)</span>`).join("")}</div>`:""}</div>`;}
 
 /* ---------- écoles et campus, urbanisme (PLU, quartiers prioritaires), catastrophes naturelles ----------
    Données préparées une fois (Éducation nationale, Enseignement supérieur, Géoportail de l'urbanisme, ANCT, Géorisques).
@@ -4474,7 +4479,7 @@ render();
  const nChg=()=>[...HYPK.filter(k=>k!=="salaires"&&k!=="pretEtud"),...TYK,"regime"].filter(k=>defOf(k)!=null&&H[k]!==defOf(k)).length;
  function pProjet(){const el=$("v2p-projet"), cr=critV(), ri=regInfo(), nch=nChg(), A=H.assoc,
   f=(k,l,u,st)=>{const d=defOf(k), ch=d!=null&&H[k]!==d; return `<div class="${ch?"v2chg":""}"><label for="v2h-${k}">${l} <span class="v2sub">(${u})</span></label><input type="number" id="v2h-${k}" data-v2h="${k}" step="${st}" value="${H[k]}">${ch?`<small class="v2def">défaut : ${d>=1000?nf(d):String(d).replace(".",",")}</small>`:""}</div>`;};
-  const tmis=[...new Set(A.map(a=>a.tmi))], regL={auto:"le régime le plus avantageux",micro:"micro-BIC",reel:"régime réel"}[H.regime]||H.regime;
+  const tmis=[...new Set(A.map(a=>a.tmi))], regL={auto:"le régime le plus avantageux",micro:"micro-BIC",reel:"régime réel"}[H.regime]||esc(H.regime);
   const sumC=`${tyl()} · jusqu'à ${keur(cr.budget)} tout compris · rendement d'au moins ${fr(cr.rmin)} % · ${cr.bank?"la banque doit suivre":"avec ou sans la banque"}`;
   const sumB=`Apport ${eur(H.apport)} · crédit à ${fr(H.taux,2)} % sur ${H.duree} ans · notaire ${fr(H.notaire)} %`;
   const sumA=`${A.length} associé${A.length>1?"s":""}${A.length>1?` (${A.map(a=>fr(a.part,0)+" %").join(" · ")})`:""} · tranche${tmis.length>1?"s":""} d'impôt ${tmis.map(t=>t+" %").join(", ")} · ${regL}`;

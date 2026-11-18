@@ -24,11 +24,11 @@ def need(p):
     return rd(p)
 
 def jdata(p):
-    """un fichier JSON de data/, vérifié"""
+    """un fichier JSON de data/, vérifié ; « < » écrit \\u003c (même valeur en JS) : un nom tiré d'OpenStreetMap contenant </script> ne peut pas fermer le <script> de la page"""
     s = need(p)
     try: json.loads(s)
     except Exception as e: ERR.append(f"{p} n'est pas un JSON valide : {e}")
-    return s
+    return s.replace("<", "\\u003c")   # dans un JSON valide, « < » n'apparaît que dans une chaîne, où < est un échappement permis
 
 def jsafe(s):
     """du JSON écrit dans le <script> de la page : « < » écrit \\u003c (un texte d'annonce contenant « </script> » ne ferme pas le script), U+2028 et U+2029 échappés ; mêmes valeurs une fois lues"""
