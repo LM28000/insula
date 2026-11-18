@@ -30,9 +30,13 @@ def jdata(p):
     except Exception as e: ERR.append(f"{p} n'est pas un JSON valide : {e}")
     return s
 
+def jsafe(s):
+    """du JSON écrit dans le <script> de la page : « < » écrit \\u003c (un texte d'annonce contenant « </script> » ne ferme pas le script), U+2028 et U+2029 échappés ; mêmes valeurs une fois lues"""
+    return s.replace("<", "\\u003c").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
+
 def jsobj(p, name):
     """un fichier data/*.js de la forme « const NAME={…}; », vérifié ; renvoie (texte, objet)"""
-    s = need(p)
+    s = jsafe(need(p))
     if not s.lstrip().startswith(f"const {name}="): ERR.append(f"{p} doit commencer par « const {name}= »")
     try: return s, json.loads(s[s.index("{"):s.rindex("}") + 1])
     except Exception as e: ERR.append(f"{p} illisible : {e}"); return s, {}
@@ -61,7 +65,7 @@ for v in ads.values():
             ids |= {str(a[3]).split("/")[-1] for a in b.get("ventes", [])} | {str(a[4]).split("/")[-1] for a in b.get("ads", [])}
 sys.path.insert(0, P("tools")); from fiches import ficx_tous
 FICX = ficx_tous(FICH, ids)   # champs utiles au calcul ; doublons (même bien chez une autre agence) marqués et complétés l'un par l'autre
-dumps = lambda o: json.dumps(o, ensure_ascii=False, separators=(",", ":"))
+dumps = lambda o: jsafe(json.dumps(o, ensure_ascii=False, separators=(",", ":")))
 import math
 def expt():
     """loyer ∝ surface^e à nombre de pièces égal : pente log-log des annonces de location, chaque ville centrée sur sa moyenne (colocations exclues)"""

@@ -1,7 +1,7 @@
 /* ---------- données réelles par quartier : ventes DVF, trajets à pied / vélo, risques Géorisques ---------- */
 const MKFULL=mkMap({gare:"la gare",univ:"l'université",centre:"le centre"});
 const mois=s=>{const [y,m]=s.split("-"); return ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."][+m-1]+" "+y;};
-const minTxt=m=>m>=60?`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`:`${m} min`;
+const minTxt=m=>typeof m!=="number"||!isFinite(m)?"":m>=60?`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")}`:`${m} min`;
 function dvfOf(t){const D=dvfC(t.ck); return D?D.q[t.code]||null:null;}
 function risqOf(t){return typeof RISQ!=="undefined"&&RISQ[t.ck]?RISQ[t.ck][t.code]||null:null;}
 function trajOf(t){const T=typeof TTQ!=="undefined"&&TTQ[t.ck]; if(!T||!T.foot[t.code]) return null; const X=typeof TCQ!=="undefined"&&TCQ[t.ck], xq=X&&X.q[t.code];

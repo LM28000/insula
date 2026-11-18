@@ -10,7 +10,10 @@ function normBien(id,raw){/* avis à deux (v2) : {prénom: "o" garder | "m" à v
   short:typeof r.short==="boolean"?r.short:undefined,votes:votesOf(r.votes),suivi:obj(r.suivi),adresse:str(r.adresse,200),visite:obj(r.visite),geo:obj(r.geo),by:str(r.by,80),maj:obj(r.maj)};
  Object.keys(b).forEach(k=>{if(b[k]===undefined) delete b[k];});
  if(TYPES[r.type]) b.type=r.type; if(+r.pieces>0) b.pieces=num(r.pieces); if(isFinite(+r.lat)&&r.lat!=null) b.lat=+r.lat; if(isFinite(+r.lon)&&r.lon!=null) b.lon=+r.lon;
- if(b.geo&&b.geo.foot&&!Array.isArray(b.geo.foot)) delete b.geo.foot;
+ /* trajets à pied à l'adresse (47-adresse.js) : rien que des nombres et des repères connus, gardés alignés entre eux */
+ if(b.geo){const g=Object.assign({},b.geo), F=Array.isArray(g.foot)?g.foot:[], K=Array.isArray(g.km)?g.km:[], M=Array.isArray(g.marks)?g.marks:[], isN=v=>typeof v==="number"&&isFinite(v);
+  const I=F.map((_,i)=>i).filter(i=>isN(F[i])&&isN(K[i])&&typeof M[i]==="string"&&/^(gare|univ|centre)\d{0,2}$/.test(M[i]));
+  delete g.foot; delete g.km; delete g.marks; if(I.length){g.foot=I.map(i=>F[i]); g.km=I.map(i=>K[i]); g.marks=I.map(i=>M[i]);} b.geo=g;}
  if(!okV||sid!==String(id)||!(b.prix>0)||!(b.surface>0)){b.bad=true; b.titre="⚠ Bien illisible"+(b.titre?" : "+b.titre:""); if(!(b.surface>0)) b.surface=22; if(!(b.prix>0)) b.prix=1;}
  return b;}
 /* années de bail restantes : fin écrite dans l'annonce (« AAAA » = milieu d'année), sinon 3 ans (durée d'un bail vide) */

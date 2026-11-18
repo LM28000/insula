@@ -53,6 +53,9 @@ const b1 = E(`normBien("abc-1",{ville:"lemans",prix:60000,surface:22,dpe:"<img s
 ok('bien hostile : DPE, statut, lien et id neutralisés', b1.id === 'abc-1' && b1.dpe === '' && b1.statut === 'à voir' && b1.url === '' && !b1.bad);
 const b2 = E(`normBien("x1",{ville:"atlantis",prix:"abc"})`);
 ok('bien illisible : gardé et signalé', b2.bad === true && /illisible/.test(b2.titre) && b2.ville === 'lemans');
+const geoH = E(`normBien("g1",{ville:"lemans",prix:6e4,surface:22,geo:{marks:["gare","<b>","univ2","centre"],foot:["<img src=x onerror=alert(1)>",12,7,9],km:[1,0.9,0.5,0.7],risq:{a:1}}}).geo`);
+ok('bien hostile : trajets à l\'adresse réduits à des nombres et des repères connus', JSON.stringify(geoH) === JSON.stringify({risq:{a:1},foot:[7,9],km:[0.5,0.7],marks:['univ2','centre']}), JSON.stringify(geoH));
+ok('trajets à l\'adresse : un bien sain garde ses trajets', JSON.stringify(E(`normBien("g2",{ville:"lemans",prix:6e4,surface:22,geo:{marks:["gare","univ","centre"],foot:[12,75,9],km:[1,6.1,0.7]}}).geo`)) === JSON.stringify({foot:[12,75,9],km:[1,6.1,0.7],marks:['gare','univ','centre']}));
 ok('shortlist : retrait conservé, absent laissé absent', E(`normBien("a",{ville:"lemans",prix:1e4,surface:20,short:false}).short`) === false && E(`"short" in normBien("a",{ville:"lemans",prix:1e4,surface:20})`) === false);
 
 // associés : deux personnes d'avant → deux associés, mêmes chiffres ; trois associés, chacun à sa tranche

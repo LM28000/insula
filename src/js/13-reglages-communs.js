@@ -49,7 +49,7 @@ function regApply(d,first){const ch=[];
  REGIN=true;
  try{
   if(d.hyp&&typeof d.hyp==="object") HYPK.forEach(k=>{if(typeof d.hyp[k]==="number") setK(k,d.hyp[k]);});
-  if(d.fin&&typeof d.fin==="object") FINK.forEach(k=>{const v=d.fin[k]; if(typeof v==="number"||(typeof v==="string"&&v.length<=40)) setK(k,v);});
+  if(d.fin&&typeof d.fin==="object") FINK.forEach(k=>{const v=d.fin[k]; if(finOk(k,v)) setK(k,v);});
   if(d.fin&&Array.isArray(d.fin.assoc)&&d.fin.assoc.length){const A=assocClean(d.fin.assoc); if(canon(A)!==canon(H.assoc)){H.assoc=A; assocNorm(); ch.push("assoc");}}
   else if(d.fin&&d.fin.tmiA!=null){   /* réglages communs d'avant les associés : les deux personnes reconstruites (prénoms, parts, tranches, assurances) */
    const F=d.fin, h=d.hyp||{}, pa=Math.min(100,Math.max(0,+F.partA||50)), sal=+h.salaires||H.salaires, cr=+h.pretEtud||0;

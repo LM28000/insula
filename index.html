@@ -3412,7 +3412,7 @@ function qpvLine(r){if(!r||!r.q) return null; const {d,name}=r.q;
  if(d<400) return ["Quartier prioritaire",`en bordure de « ${esc(name)} »`,`à ${mTxtD(d)} du centre du quartier`];
  return null;}
 function urbaBlock(t){const r=terOf(t); if(!r) return ""; const u=r.u;
- return `${fRows([["Zone du PLU",u?`<b>${esc(u[0])}</b> · ${ZTYPE[u[1]]||u[1]}${zProjet(u)?` · <b>secteur de projet</b>`:""}`:"non trouvée",u?esc(u[2]):""],qpvLine(r)])}${fNote(`Au centre du quartier. Règlement et projets : <a href="https://www.geoportail-urbanisme.gouv.fr/" target="_blank" rel="noopener">Géoportail de l'urbanisme</a>.`)}`;}
+ return `${fRows([["Zone du PLU",u?`<b>${esc(u[0])}</b> · ${esc(ZTYPE[u[1]]||u[1])}${zProjet(u)?` · <b>secteur de projet</b>`:""}`:"non trouvée",u?esc(u[2]):""],qpvLine(r)])}${fNote(`Au centre du quartier. Règlement et projets : <a href="https://www.geoportail-urbanisme.gouv.fr/" target="_blank" rel="noopener">Géoportail de l'urbanisme</a>.`)}`;}
 const urbaSum=t=>{const r=terOf(t); if(!r) return ""; return r.q&&r.q.d===0?"quartier prioritaire":r.u?`zone ${r.u[0]}`:"";};
 
 /* catastrophes naturelles reconnues (toute la commune) */
@@ -3428,7 +3428,7 @@ const URBTRY=new Set();
 function adrUrbaFill(b){if(!b||!b.id||!b.adresse||b.lat==null||URBTRY.has(b.id)) return; const g=b.geo||{}; if(g.urba||g.cad) return; URBTRY.add(b.id);
  adrUrba(b.lat,b.lon).then(o=>{if((o.urba||o.cad)&&typeof updBien==="function") updBien(b.id,{geo:Object.assign({},g,o)});}).catch(()=>{});}
 function adrUrbaBlock(b){const g=b.geo||{}; if(!g.urba&&!g.cad) return "";
- return fRows([g.urba&&["Zone du PLU à l'adresse",`<b>${esc(g.urba[0])}</b> · ${ZTYPE[g.urba[1]]||g.urba[1]}${zProjet(g.urba)?" · <b>secteur de projet</b>":""}`,esc(g.urba[2])],g.cad&&["Parcelle cadastrale",`<b>${esc(g.cad[0])} ${esc(g.cad[1])}</b>`,`${g.cad[2]?(+g.cad[2]).toLocaleString("fr-FR")+" m², tout l'immeuble · ":""}à citer pour les documents d'urbanisme`]]);}
+ return fRows([g.urba&&["Zone du PLU à l'adresse",`<b>${esc(g.urba[0])}</b> · ${esc(ZTYPE[g.urba[1]]||g.urba[1])}${zProjet(g.urba)?" · <b>secteur de projet</b>":""}`,esc(g.urba[2])],g.cad&&["Parcelle cadastrale",`<b>${esc(g.cad[0])} ${esc(g.cad[1])}</b>`,`${g.cad[2]?(+g.cad[2]).toLocaleString("fr-FR")+" m², tout l'immeuble · ":""}à citer pour les documents d'urbanisme`]]);}
 
 /* habitants (Insee : recensement 2022 par quartier IRIS, revenus Filosofi 2021) */
 const hasHAB=ck=>typeof HABQ!=="undefined"&&!!HABQ&&!!HABQ.q[ck];
@@ -3543,7 +3543,7 @@ function bruitBlock(b,t){const B=bruitOf(b,t); if(!B.v&&!B.peb&&!B.wait&&typeof 
  const rows=(B.v?BRK.map((k,i)=>{const x=B.v[i]; return [k,x?`à <b>${brM(x[0])}</b>${x[1]?` <span class="v2sub">(${esc(x[1])})</span>`:""}`:`à plus de ${brM(B.far)}`,i===0?"bruit sensible jusqu'à 300 m environ":i===1?"jusqu'à 100 à 250 m selon le trafic":"jusqu'à 100 à 300 m selon le trafic"];}):[])
   .concat(B.wait?[["Routes et train",`<span data-brw="${esc(B.P?B.P.s:"adresse")}">mesure en cours ${B.P?"autour de la position de l'annonce":"à l'adresse"}…</span>`,""]]:[])
   .concat(t&&bruitExpo(t)!=null?[[b?"Le quartier":"Quartier exposé",`<b>${fr(bruitExpo(t),0)} %</b> de sa surface exposée${(()=>{const c=cityExpo(t.ck); return c!=null?` <span class="v2sub">(ville : ${fr(c,0)} %)</span>`:"";})()}`,"à 300 m au plus d'une voie rapide, 50 m d'un grand axe, 100 m d'une voie ferrée, ou en zone A à C d'un aéroport"]]:[])
-  .concat(B.peb?[["Aéroport",`zone <b>${BRZ[B.peb.zone]||B.peb.zone}</b>, ${esc(B.peb.nom)}`,`plan d'exposition au bruit${B.peb.date?` du ${frD(String(B.peb.date).slice(0,10))}`:""} ; mesuré ${B.pebHow.replace(/^autour d[eu] /,"")}`]]:[]);
+  .concat(B.peb?[["Aéroport",`zone <b>${esc(BRZ[B.peb.zone]||B.peb.zone)}</b>, ${esc(B.peb.nom)}`,`plan d'exposition au bruit${B.peb.date?` du ${frD(String(B.peb.date).slice(0,10))}`:""} ; mesuré ${B.pebHow.replace(/^autour d[eu] /,"")}`]]:[]);
  const where=B.how==="adresse"?"Distances mesurées à l'adresse":B.how==="position"?`Distances mesurées autour de la position de l'annonce (à ${B.r} m près)`:"Distances mesurées au centre du quartier";
  const none=b&&!B.v&&!B.wait?(B.fail?"Routes et train : mesure pas aboutie (OpenStreetMap indisponible), refaite au prochain chargement. ":"Routes et train : la position de l'annonce est trop approximative pour les mesurer (il faut l'adresse, ou une position à 100 m près). "):"";
  return `<h4 class="fh4">Bruit</h4>${fRows(rows)}${fNote(`${B.v?where+" (OpenStreetMap) : un repère ; le trafic et l'orientation (rue ou cour) comptent. ":none}${B.peb?"":"Hors des zones de bruit des aéroports (DGAC)."}`)}`;}

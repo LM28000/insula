@@ -9,6 +9,8 @@
 const FISC={abatMicro:0.5, ps:18.6, pvIR:19, pvPS:17.2, terrain:0.15, ansBati:30, ansMeubles:7, ansTravaux:10, fraisForfait:7.5, abatFoncier:0.3, psFoncier:17.2};   /* revenus fonciers (bail vide en cours d'un bien vendu loué) : micro-foncier, prélèvements sociaux hors hausse de la LFSS 2026 */
 const FIN0={garantie:1.0, assurA:0.20, quotA:100, assurB:0.20, quotB:100, tmiA:0, tmiB:0, regime:"auto", cfe:100, compta:150, partA:50, net:true, nomA:"", nomB:""};
 Object.assign(H,FIN0); Object.assign(HDEF,FIN0);
+/* réglages du financement venus d'ailleurs (ligne commune, copie locale) : le régime n'est que l'un des trois connus, garantie, CFE et comptable sont des nombres */
+const finOk=(k,v)=>k==="regime"?["auto","micro","reel"].includes(v):["garantie","cfe","compta"].includes(k)?typeof v==="number"&&isFinite(v):true;
 /* ---------- associés : de 1 à 6 personnes qui achètent ensemble ----------
    Chacune a sa part du bien (part des loyers, des charges, de la mensualité et de l'impôt), ses revenus, ses autres crédits,
    sa tranche d'impôt et son assurance de prêt (taux et quotité). La banque regarde l'endettement de l'ensemble ; celui de chacun
@@ -27,7 +29,7 @@ function assocFromLegacy(h){if(!h||!Array.isArray(H.assoc)) return; const A=H.as
  sc("salaires","revenus"); sc("pretEtud","credits"); if(h.tmiA!=null&&A[0]) A[0].tmi=+h.tmiA; if(h.tmiB!=null&&A[1]) A[1].tmi=+h.tmiB; assocNorm();}
 (function(){try{const s=JSON.parse(localStorage.getItem("fin")||"null"); if(s){
   if(!s.v2){if(s.tmiB===11) delete s.tmiB; if(s.compta===300) delete s.compta; if(s.cfe===200) delete s.cfe;} // anciens réglages par défaut
-  ["garantie","assurA","quotA","assurB","quotB","tmiA","tmiB","regime","cfe","compta","nomA","nomB"].forEach(k=>{if(s[k]!=null) H[k]=s[k];});
+  ["garantie","assurA","quotA","assurB","quotB","tmiA","tmiB","regime","cfe","compta","nomA","nomB"].forEach(k=>{if(s[k]!=null&&finOk(k,s[k])) H[k]=s[k];});
   if(Array.isArray(s.assoc)) H.assoc=s.assoc;}
  const m=localStorage.getItem("chiffres"); if(m) H.net=m!=="brut";}catch(_){}
  /* première fois : les deux personnes d'avant deviennent deux associés, mêmes chiffres (revenus du foyer partagés selon la part) */

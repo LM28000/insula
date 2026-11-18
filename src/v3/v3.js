@@ -686,7 +686,7 @@
  const nChg=()=>[...HYPK.filter(k=>k!=="salaires"&&k!=="pretEtud"),...TYK,"regime"].filter(k=>defOf(k)!=null&&H[k]!==defOf(k)).length;
  function pProjet(){const el=$("v2p-projet"), cr=critV(), ri=regInfo(), nch=nChg(), A=H.assoc,
   f=(k,l,u,st)=>{const d=defOf(k), ch=d!=null&&H[k]!==d; return `<div class="${ch?"v2chg":""}"><label for="v2h-${k}">${l} <span class="v2sub">(${u})</span></label><input type="number" id="v2h-${k}" data-v2h="${k}" step="${st}" value="${H[k]}">${ch?`<small class="v2def">défaut : ${d>=1000?nf(d):String(d).replace(".",",")}</small>`:""}</div>`;};
-  const tmis=[...new Set(A.map(a=>a.tmi))], regL={auto:"le régime le plus avantageux",micro:"micro-BIC",reel:"régime réel"}[H.regime]||H.regime;
+  const tmis=[...new Set(A.map(a=>a.tmi))], regL={auto:"le régime le plus avantageux",micro:"micro-BIC",reel:"régime réel"}[H.regime]||esc(H.regime);
   const sumC=`${tyl()} · jusqu'à ${keur(cr.budget)} tout compris · rendement d'au moins ${fr(cr.rmin)} % · ${cr.bank?"la banque doit suivre":"avec ou sans la banque"}`;
   const sumB=`Apport ${eur(H.apport)} · crédit à ${fr(H.taux,2)} % sur ${H.duree} ans · notaire ${fr(H.notaire)} %`;
   const sumA=`${A.length} associé${A.length>1?"s":""}${A.length>1?` (${A.map(a=>fr(a.part,0)+" %").join(" · ")})`:""} · tranche${tmis.length>1?"s":""} d'impôt ${tmis.map(t=>t+" %").join(", ")} · ${regL}`;

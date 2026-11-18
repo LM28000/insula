@@ -25,7 +25,7 @@ function qpvLine(r){if(!r||!r.q) return null; const {d,name}=r.q;
  if(d<400) return ["Quartier prioritaire",`en bordure de « ${esc(name)} »`,`à ${mTxtD(d)} du centre du quartier`];
  return null;}
 function urbaBlock(t){const r=terOf(t); if(!r) return ""; const u=r.u;
- return `${fRows([["Zone du PLU",u?`<b>${esc(u[0])}</b> · ${ZTYPE[u[1]]||u[1]}${zProjet(u)?` · <b>secteur de projet</b>`:""}`:"non trouvée",u?esc(u[2]):""],qpvLine(r)])}${fNote(`Au centre du quartier. Règlement et projets : <a href="https://www.geoportail-urbanisme.gouv.fr/" target="_blank" rel="noopener">Géoportail de l'urbanisme</a>.`)}`;}
+ return `${fRows([["Zone du PLU",u?`<b>${esc(u[0])}</b> · ${esc(ZTYPE[u[1]]||u[1])}${zProjet(u)?` · <b>secteur de projet</b>`:""}`:"non trouvée",u?esc(u[2]):""],qpvLine(r)])}${fNote(`Au centre du quartier. Règlement et projets : <a href="https://www.geoportail-urbanisme.gouv.fr/" target="_blank" rel="noopener">Géoportail de l'urbanisme</a>.`)}`;}
 const urbaSum=t=>{const r=terOf(t); if(!r) return ""; return r.q&&r.q.d===0?"quartier prioritaire":r.u?`zone ${r.u[0]}`:"";};
 
 /* catastrophes naturelles reconnues (toute la commune) */
@@ -41,7 +41,7 @@ const URBTRY=new Set();
 function adrUrbaFill(b){if(!b||!b.id||!b.adresse||b.lat==null||URBTRY.has(b.id)) return; const g=b.geo||{}; if(g.urba||g.cad) return; URBTRY.add(b.id);
  adrUrba(b.lat,b.lon).then(o=>{if((o.urba||o.cad)&&typeof updBien==="function") updBien(b.id,{geo:Object.assign({},g,o)});}).catch(()=>{});}
 function adrUrbaBlock(b){const g=b.geo||{}; if(!g.urba&&!g.cad) return "";
- return fRows([g.urba&&["Zone du PLU à l'adresse",`<b>${esc(g.urba[0])}</b> · ${ZTYPE[g.urba[1]]||g.urba[1]}${zProjet(g.urba)?" · <b>secteur de projet</b>":""}`,esc(g.urba[2])],g.cad&&["Parcelle cadastrale",`<b>${esc(g.cad[0])} ${esc(g.cad[1])}</b>`,`${g.cad[2]?(+g.cad[2]).toLocaleString("fr-FR")+" m², tout l'immeuble · ":""}à citer pour les documents d'urbanisme`]]);}
+ return fRows([g.urba&&["Zone du PLU à l'adresse",`<b>${esc(g.urba[0])}</b> · ${esc(ZTYPE[g.urba[1]]||g.urba[1])}${zProjet(g.urba)?" · <b>secteur de projet</b>":""}`,esc(g.urba[2])],g.cad&&["Parcelle cadastrale",`<b>${esc(g.cad[0])} ${esc(g.cad[1])}</b>`,`${g.cad[2]?(+g.cad[2]).toLocaleString("fr-FR")+" m², tout l'immeuble · ":""}à citer pour les documents d'urbanisme`]]);}
 
 /* habitants (Insee : recensement 2022 par quartier IRIS, revenus Filosofi 2021) */
 const hasHAB=ck=>typeof HABQ!=="undefined"&&!!HABQ&&!!HABQ.q[ck];
