@@ -38,11 +38,11 @@ const DPEW={elec:"électricité comptée 1,7 fois au lieu de 2,3 (ou 1,9 en 2026
 const dpeAJ=suf=>{const x=ficx(suf); return x&&x.dpe0?x:null;};
 const dpeNote=x=>x?`annoncé ${x.dpe0} ; ${x.dpe} avec le calcul en vigueur au 1er janvier 2027 (${DPEW[x.dpeW]||"nouveau calcul"}). Estimation : demandez au vendeur l'étiquette à jour, gratuite sur l'Observatoire DPE de l'ADEME.`:"";
 
-const photoFull=(suf,p)=>{const id=adId(suf); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p);};
+const photoFull=(suf,p)=>{if(/^https?:/.test(p)) return p; const id=adId(suf); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p);};
 const etTxt=f=>f.et==null?"":(f.et===0?"rez-de-chaussée":`${f.et}${f.et===1?"er":"e"} étage`)+(f.ets?` sur ${f.ets}`:"")+(f.asc===true?", avec ascenseur":f.asc===false?", sans ascenseur":"");
 const frD=s=>{if(!s) return ""; const [y,m,d]=s.split("-"); return `${+d} ${MOISC[+m-1]} ${y}`;};
 const MOISC=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
-function ficheNone(suf){return `<p class="sub" style="margin:0">La fiche complète de cette annonce n'a pas encore été relevée : elle le sera lors d'un prochain relevé. <a href="${esc(VTURL+suf)}" target="_blank" rel="noopener">Voir sur Bien'ici ↗</a></p>`;}
+function ficheNone(suf){return `<p class="sub" style="margin:0">La fiche complète de cette annonce n'a pas encore été relevée : elle le sera lors d'un prochain relevé. <a href="${esc(venteUrl(suf))}" target="_blank" rel="noopener">Voir sur Bien'ici ↗</a></p>`;}
 function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon${f.balc>1?"s":""}`,f.terr&&`${f.terr} terrasse${f.terr>1?"s":""}`,f.park&&`${f.park} parking${f.park>1?"s":""}`,f.cave&&`${f.cave} cave${f.cave>1?"s":""}`].filter(Boolean);
  const fx=ficx(suf)||{}, cop=copAn(f)||copAn(fx), copD=!copAn(f)&&!!fx.copD, rows=[   /* charges : Bien'ici, sinon lues dans la description (tools/fiches.py cop_desc) ou chez un doublon */
   f.surf&&["Surface",`<b class="mono">${fr(f.surf,f.surf%1?2:0)} m²</b>${f.pcs?` · ${f.pcs} pièce${f.pcs>1?"s":""}`:""}`],
@@ -60,7 +60,7 @@ function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon
  /* une longue description : le début, puis « Lire la suite » ouvre la fin seulement (avant, la description entière, et le début s'affichait deux fois) */
  const desc=d?`<div class="fdesc">${esc(cut>0?d.slice(0,cut)+"…":d)}</div>${cut>0?`<details class="fdmore"><summary>Lire la suite</summary><div class="fdesc">…${esc(d.slice(cut).trim())}</div></details>`:""}`:`<p class="sub">Pas de description.</p>`;
  const ph=(f.ph||[]).map((p,i)=>`<a href="${esc(photoFull(suf,p))}" target="_blank" rel="noopener" aria-label="Photo ${i+1} sur ${f.ph.length}, en grand"><img src="${esc(photoUrl(suf,p,360,270))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join("");
- return `${ph?`<div class="fgal">${ph}</div>`:""}${rows.length?fRows(rows):""}${desc}${iaHtml(f,ck,suf)}<p class="sub" style="margin:6px 0 0">Fiche relevée sur Bien'ici le ${frD(f.lu)}.</p>`;}
+ return `${ph?`<div class="fgal">${ph}</div>`:""}${rows.length?fRows(rows):""}${desc}${iaHtml(f,ck,suf)}<p class="sub" style="margin:6px 0 0">Fiche relevée sur ${srcOf(suf)==='Bien\'ici'?"Bien'ici":'le site des notaires'} le ${frD(f.lu)}${f.notaire?` · notaire : ${esc(f.notaire)}`:""}.</p>`;}
 function ficheSum(f,suf){if(f===undefined) return "chargement…"; if(!f) return "pas encore relevée"; const n=(f.ph||[]).length, x=suf?dpeAJ(suf):null;
  return [f.d&&"description",n&&`${n} photo${n>1?"s":""}`,f.dpe&&`DPE ${x?x.dpe+" (annoncé "+f.dpe+")":f.dpe}`,(copAn(f)||copAn(ficx(suf)||{}))&&`${eur((copAn(f)||copAn(ficx(suf)))/12)}/mois de copro`,f.coloc&&"colocation"].filter(Boolean).join(" · ");}
 /* rubrique « L'annonce » des fiches (ordinateur et téléphone) */

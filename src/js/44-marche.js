@@ -11,7 +11,7 @@ let MSEEN=null;           // date de la visite précédente (pour « nouveau »)
  else MSEEN=s.prev;}catch(_){}})();
 function hEntry(ck,suf){return HIST[ck]&&HIST[ck].v&&HIST[ck].v[suf];}
 function isNewAd(ck,suf){const e=hEntry(ck,suf); if(!e) return false; const pub=typeof pubOf==="function"&&pubOf("v",suf); if(pub&&(isoD(e.f)-isoD(pub))/DAY>7) return false; if(MSEEN) return e.f>MSEEN&&e.f>(hStart(ck,"v")||""); const v=vu("v",ck,suf); return !!(v&&v.isNew);}
-function adInfo(ck,a){const r=venteCalc(ck,a), v=vu("v",ck,a[3]), t=venteIrisA(ck,a), d=t?demandOf(t):null; return {ck,a,r,x:r.x,v,t,d,nw:isNewAd(ck,a[3]),url:VTURL+a[3]};}
+function adInfo(ck,a){const r=venteCalc(ck,a), v=vu("v",ck,a[3]), t=venteIrisA(ck,a), d=t?demandOf(t):null; return {ck,a,r,x:r.x,v,t,d,nw:isNewAd(ck,a[3]),url:venteUrl(a[3])};}
 function bienOf(url){return BIENS.find(b=>b.url===url)||null;}
 
 function kp(label,val,cls,sub){return `<div class="mk"><small>${label}</small><b class="${cls||""}">${val}</b>${sub?`<em>${sub}</em>`:""}</div>`;}
@@ -21,7 +21,7 @@ function feedList(F){F=F||MF; const out=[]; Object.entries(ADS).forEach(([ck,A])
  return out;}
 
 /* ajouter / retirer de la shortlist */
-async function mStar(ck,suf){const a=(ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a||!DB) return; const url=VTURL+suf, b=bienOf(url);
+async function mStar(ck,suf){const a=(ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a||!DB) return; const url=venteUrl(suf), b=bienOf(url);
  if(b&&!isOut(b)){await retirer(b); return;}
  if(b){await updBien(b.id,{statut:"à voir",short:true}); toast("Suivi à nouveau : il est dans Nos biens."); return;}
  const vb=venteBien(ck,a), bien={titre:vb.titre,url:vb.url,ville:ck,quartier:vb.quartier,type:vb.type,prix:a[2],surface:a[0],copro:0,tf:0,loyer:0,travaux:0,dpe:vb.dpe||"",notes:"",statut:"à voir",fav:false,par:myName(),ts:Date.now()};

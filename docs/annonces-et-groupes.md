@@ -4,6 +4,10 @@
 
 Chaque soir, une routine Claude relève les annonces Bien'ici des 22 villes : studios, T2 et T3, à vendre et à louer. Elle s'arrête au plafond tiré du budget du groupe. Son texte complet est dans [tools/routine-releve.md](../tools/routine-releve.md). Elle ouvre les pages comme un visiteur, une par une, sans appeler d'API en masse et sans contourner de blocage.
 
+Depuis le 19 novembre 2026, le même relevé peut tourner sans Claude, sur le serveur de la maison ([Le relevé sur le serveur](releve-serveur.md)). Il ajoute aux ventes de Bien'ici celles des **notaires** (immobilier.notaires.fr, `tools/notaires.mjs`) : appartements en vente classique de nos villes, dans le type, la surface et le budget du plan, frais de négociation du notaire compris. Une annonce de notaire a pour lien son adresse complète, à la place du chemin Bien'ici ; le moteur en tire son lien, sa source (« annonce des notaires ») et son identifiant (`venteUrl`, `srcOf` dans `src/js/20-ventes.js`). Sa fiche vient du site des notaires, avec la situation locative (loué ou libre) déclarée par le notaire. Son quartier est celui que le notaire écrit en tête de sa description (« PONTLIEUE - … »), s'il porte exactement le nom d'un quartier IRIS de la ville ; sinon, l'annonce est calculée au niveau de la ville.
+
+Les autres sites ont été essayés le 19 novembre 2026 : Leboncoin, SeLoger, Logic-Immo, PAP, Le Figaro Immobilier, Superimmo, avendrealouer et entreparticuliers refusent les navigateurs automatiques (403 ou vérification anti-robot) ; on ne les relève pas. ParuVendu les accepte, mais ses annonces sont surtout celles des agences déjà sur Bien'ici, sans quartier ni position : elle demanderait de reconnaître les doublons.
+
 ```
 tools/releve_plan.py              le plan : villes, types, tranches de prix, pages à ouvrir
   └─ tools/extraction-bienici.js  lit chaque page de résultats → data/releve-du-jour.json

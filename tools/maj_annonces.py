@@ -36,6 +36,8 @@ def load_js(path, name):
 def save_js(path, name, obj):
     open(path, "w", encoding="utf-8").write(f"const {name}=" + json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + ";\n")
 
+def lien_v(k): return k if str(k).startswith("http") else "https://www.bienici.com/annonce/vente/" + k   # autre source (notaires) : lien complet
+
 def rref(a, ty): return a[2] * (SURF[ty] / a[0]) ** 0.6
 def med(v): return round(st.median(v)) if v else None
 
@@ -87,7 +89,7 @@ def main():
                     else:
                         if e["p"][-1][1] != a[ip]:
                             if kind == "v" and a[ip] < e["p"][-1][1]:
-                                out["baisses"].append({"type": ty, "ville": ck, "lien": "https://www.bienici.com/annonce/vente/" + k, "avant": e["p"][-1][1], "apres": a[ip], "secteur": a[1]})
+                                out["baisses"].append({"type": ty, "ville": ck, "lien": lien_v(k), "avant": e["p"][-1][1], "apres": a[ip], "secteur": a[1]})
                             e["p"].append([today, a[ip]])
                         e["s"] = today; e["m"] = meta(a); e.pop("g", None); e.pop("a", None); e.pop("ad", None)
                 for k, e in H[kind].items():
@@ -101,7 +103,7 @@ def main():
             for a in nv:
                 cheap = pmed and a[2] / a[0] <= 0.8 * pmed
                 if (ty == "studio" and 18 <= a[0] <= 30 and a[2] <= 65000) or (ty != "studio" and cheap):
-                    out["affaires"].append({"type": ty, "ville": ck, "lien": "https://www.bienici.com/annonce/vente/" + a[3], "secteur": a[1], "prix": a[2], "m2": a[0], "prix_m2": round(a[2] / a[0])})
+                    out["affaires"].append({"type": ty, "ville": ck, "lien": lien_v(a[3]), "secteur": a[1], "prix": a[2], "m2": a[0], "prix_m2": round(a[2] / a[0])})
             if ty == "studio":
                 for a in nl:
                     if a[3] and 18 <= a[0] <= 26 and a[2] <= 470:

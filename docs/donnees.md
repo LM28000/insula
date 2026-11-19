@@ -54,6 +54,7 @@ Le code est sous licence MIT. Les fichiers de `data/` n'en font pas partie : cha
 | lignes de bus et tram, trajets en bus (`lignes.js`, `transports.json`) | horaires GTFS des réseaux (transport.data.gouv.fr) | celle de chaque réseau (souvent ODbL) |
 | prix et loyers RealAdvisor des quartiers (dans `irisdata.js`) | RealAdvisor | non couverts : droits de RealAdvisor |
 | secteurs Bien'ici reliés aux quartiers (`secteurs-nouvelles-villes.json`) | Bien'ici | non couverts : droits de Bien'ici |
+| annonces des notaires (ventes, fiches ; privées, dans Supabase comme celles de Bien'ici) | immobilier.notaires.fr (Notaires de France) | non couverts : droits des notaires ; lien vers l'annonce d'origine |
 
 Fond de carte : © OpenStreetMap et ses contributeurs (ODbL), tuiles OpenFreeMap.
 
@@ -70,4 +71,5 @@ Ces services sont appelés au moment où l'on utilise la fonction concernée. Ri
 | routing.openstreetmap.de | trajets depuis l'adresse d'un bien |
 | Overpass (OpenStreetMap) | grands axes et voies ferrées autour de l'adresse d'un bien |
 | photos Bien'ici (`file.bienici.com`) | photos des annonces |
+| photos des notaires (`media.immobilier.notaires.fr`) | photos des annonces des notaires |
 | Supabase | annonces du soir, liste commune d'un groupe |

@@ -2,6 +2,12 @@
 
 Les grandes étapes du site. Le détail de chaque changement est dans l'historique git, où les messages de commit sont rédigés. Les notes de l'app Android sont dans son propre dépôt.
 
+## 19 novembre 2026 — Le relevé sur le serveur, et les notaires
+
+- Le relevé de la nuit peut tourner sans la routine Claude : `tools/releve.mjs`, dans un conteneur Docker du serveur de la maison (`docker/releve`, [docs/releve-serveur.md](docs/releve-serveur.md)).
+- Deuxième source de ventes : les annonces des notaires (immobilier.notaires.fr), avec leur fiche, la situation locative déclarée et le quartier quand le notaire l'écrit. Elles portent la mention « annonce des notaires ».
+- Les sites qui refusent les navigateurs automatiques (Leboncoin, SeLoger, PAP…) ne sont pas relevés.
+
 ## 14 novembre 2026 — Les fiches en questions
 
 - La fiche est faite de questions repliées, les mêmes dans l'app Android : qu'est-ce qu'on achète, est-ce cher, combien il se louera, combien ça coûte et rapporte, ce qui peut mal tourner, où c'est, si on y va. Chacune a sa ligne de faits ; en tête, trois chiffres et « À regarder » ; en bas, Suivre et Voir l'annonce.

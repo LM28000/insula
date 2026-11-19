@@ -4,7 +4,7 @@ Depuis le 19 novembre 2026, le relevé des annonces peut tourner sans la routine
 
 ## Ce qui tourne
 
-- `tools/releve.mjs` lit le plan du relevé (`tools/releve_plan.py`), ouvre les pages de résultats de Bien'ici une par une et lance sur chacune le script de lecture de la routine (`tools/extraction-bienici.js`). Puis il lit les fiches des annonces nouvelles avec `tools/fiches-bienici.js`.
+- `tools/releve.mjs` lit le plan du relevé (`tools/releve_plan.py`), ouvre les pages de résultats de Bien'ici une par une et lance sur chacune le script de lecture de la routine (`tools/extraction-bienici.js`). Il relève ensuite les ventes des notaires (`tools/notaires.mjs`), dans un second onglet, au rythme que leur site demande (10 s au moins entre deux demandes) : une vingtaine de départements, filtrés par le site lui-même (prix, surface, pièces), une quarantaine de demandes. Puis il lit les fiches des annonces nouvelles, chacune sur son site (`tools/fiches-bienici.js`, `fichesNotaires`). Un refus des notaires n'arrête pas le relevé de Bien'ici (`--sans-notaires` pour s'en passer).
 - **Le rythme est celui d'un visiteur** : 8 à 14 secondes entre deux pages, tirées au hasard, et 1,5 seconde entre deux fiches. Le 19 novembre, une page toutes les 3 à 4 secondes avait fait cesser l'affichage des annonces au bout de 213 pages.
 - **Au premier refus du site**, ou à une page restée vide deux fois, le relevé s'arrête. Il n'écrit rien et ne publie rien, et il garde une capture de la page (`arret.png`). On ne contourne pas un blocage.
 - **Dans le conteneur, le navigateur tourne sans fenêtre.** C'est le Chromium de l'image Playwright. En fenêtre, sur un écran virtuel, il abandonnait les pages de Bien'ici (`ERR_ABORTED`).
@@ -48,5 +48,5 @@ Le cron du compte lance le relevé chaque nuit à 5 h 30, en essai pour l'instan
 1. **Comparer** une nuit le relevé du serveur (`releve-essai/releve-du-jour.json`) avec celui de la routine.
 2. **Donner au serveur le droit de pousser** : créer une clé dans `~/.local/share/insula-releve/ssh`, l'ajouter comme clé de déploiement en écriture du dépôt `LM28000/insula`, et faire pointer `origin` du clone vers `git@github.com:LM28000/insula.git`.
 3. **Passer le cron en `MODE=publier`.**
-4. **Réduire la routine Claude** à la lecture des descriptions et aux messages.
+4. **Le même jour, réduire la routine Claude** à la lecture des descriptions et aux messages. Une routine qui relèverait encore Bien'ici seule ferait disparaître les annonces des notaires de ses relevés : au bout de deux jours, `maj_annonces.py` les compterait vendues.
 5. **Sur le Mac**, avant de construire la page, reprendre les annonces du serveur : `python3 tools/supabase_annonces.py pull --force`.

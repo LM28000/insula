@@ -736,7 +736,7 @@
  /* « Combien ça coûte et rapporte ? » : le scénario affiché, les trois rendements, et à partir de quand on est gagnant si l'on revend */
  const argentX=(x,z)=>{const g=typeof gainTxt==="function"?gainTxt(x):""; return `${scnRow()}${z&&z.prudent!=null?`<p class="v2sub" style="margin:0">Rendement selon les hypothèses : prudentes ${pctS(z.prudent)}, centrales ${pctS(z.central??x.irr)}, favorables ${pctS(z.favorable)}.</p>`:""}${g?`<div class="v3gain"><b>Si on revend : ${g}</b><small>Gagnant : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et tout ce qu'on a sorti de notre poche (apport et mois négatifs).</small></div>`:""}`;};
  function bienOfSel(s){const [k,...r]=s.split("|"); if(k==="b"){const b=BIENS.find(x=>x.id===r[0]); return b?{b,kind:"b"}:null;}
-  if(k==="v"){const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a) return null; const ex=bienOf(VTURL+suf); return {b:Object.assign(venteBien(ck,a),{kind:"v",suf}),a,ck,suf,ex:ex&&!isOut(ex)?ex:null,kind:"v"};}
+  if(k==="v"){const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a) return null; const ex=bienOf(venteUrl(suf)); return {b:Object.assign(venteBien(ck,a),{kind:"v",suf}),a,ck,suf,ex:ex&&!isOut(ex)?ex:null,kind:"v"};}
   return null;}
  function prixNuage(b,t){const ty=H.type, D=typeof dvfC==="function"?dvfC(b.ville,ty):null, q=D&&t?D.q[t.code]:null, s=+b.surface||22, pm=+b.prix/s, ref=(t?studioPm2(b.ville,t,ty):studioPm2(b.ville,null,ty))*pm2Adj(ty,s);
   const pts=[]; (q&&q.last||[]).forEach(v=>pts.push({x:v[2],y:v[1]/v[2],c:cv("var(--muted)"),shape:"sq",t:`Vente ${v[0]} · ${eur(v[1])} · ${v[2]} m²`}));
@@ -768,7 +768,7 @@
   const tit=String(R.kind==="b"?(b.titre||"Bien"):b.titre).split(" · ")[0], ann=R.kind==="v"?R.a[1]:b.quartier, qn=t?t.name:b.quartier||"";
   const psuf=R.kind==="v"?R.suf:(typeof bienSuf==="function"?bienSuf(b)||"":""), pf=psuf?ficheOf(b.ville,psuf):null, pn=pf&&pf.ph?pf.ph.length:0, hc=!!psuf&&horsCalcul(psuf);
   const hero=ph?`<button type="button" class="v3fph" data-v2photos="${esc(b.ville)}|${esc(psuf)}" aria-label="Voir les photos en grand"><img src="${esc(ph)}" alt="" referrerpolicy="no-referrer" onerror="this.closest('.v3fph').remove()"><span class="v2fthn">${pn>1?`${pn} photos`:"agrandir"}</span></button>`:"";
-  const badges=R.kind==="v"?ficheBadges(R.suf,true)||"":"";
+  const badges=(R.kind==="v"&&srcCle(R.suf)!=="bienici"?`<span class="v2pill" title="annonce relevée sur le site des notaires">annonce des notaires</span>`:"")+(R.kind==="v"?ficheBadges(R.suf,true)||"":"");
   const head=`<h2 class="v2ft">${keur(+b.prix)} · ${esc(tit)}</h2><p class="v2sub">${esc(cityName(b.ville))}${qn?" · quartier "+esc(qn):""}${ann&&qn&&ann!==qn?` <span title="nom du secteur dans l'annonce">(« ${esc(ann)} » dans l'annonce)</span>`:""} · ${eur(+b.prix/(+b.surface||1))}/m²${dpe?" · DPE "+esc(dpe):""} ${R.kind==="v"?_vuBadgesF("v",R.ck,R.suf):""}</p>${badges?`<div class="v2chips">${badges}</div>`:""}`;
   const nd=typeof docsN==="function"?docsN(b):0;
   const deux=bb?`<div class="v2sec v2adeux"><h3>À deux</h3><div class="v2vrow"><b>${esc(me||"Vous")}</b>${me?voteBtns(bb,me):`<button type="button" class="v2btn sm" data-v2tab="reglages">Votre prénom, dans Réglages</button>`}</div>${oth.map(o=>`<div class="v2vrow"><b>${esc(o)}</b>${voteTxt(bb,o)}</div>`).join("")}</div>`:"";
@@ -980,7 +980,7 @@
   if(d.v2nas){const k=+d.v2nas, A=H.assoc.slice(0,k); while(A.length<k) A.push(assoc0(k)); A.forEach(a=>{a.part=100/k;}); H.assoc=A; assocNorm(); saveFin(); CALCC.clear(); VC.clear(); render(); return;}
   if(d.v2reset!=null){if(confirm(regShared()?`Revenir aux valeurs par défaut pour ${nous()} ? Vos critères et vos biens ne changent pas.`:"Revenir aux valeurs par défaut ? Vos critères et vos biens ne changent pas.")) regReset(); return;}
   if(d.v2offkeep){const [k,ck,...r]=d.v2offkeep.split("|"), suf=r.join("|"), P=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!P) return; const pr=Math.round(P[2]*(OFFT[d.v2offkeep]??100)/100/500)*500;
-   Promise.resolve(mStar(ck,suf)).then(()=>setTimeout(()=>{const b=bienOf(VTURL+suf); if(b){delete OFFT[d.v2offkeep]; updBien(b.id,{visite:Object.assign(visCopy(b),{offre:pr})});}},600)); return;}
+   Promise.resolve(mStar(ck,suf)).then(()=>setTimeout(()=>{const b=bienOf(venteUrl(suf)); if(b){delete OFFT[d.v2offkeep]; updBien(b.id,{visite:Object.assign(visCopy(b),{offre:pr})});}},600)); return;}
   if(d.v2min!=null){V.min=!V.min; save(); mapList(); return;}
   if(d.v2cfiche){openSel(`c|${d.v2cfiche}`); return;}
   if(d.v2photos!=null){const [c,...r]=d.v2photos.split("|"), im=t.querySelector("img"); lbOpen(c,r.join("|"),im&&im.src); return;}   /* photos en grand */   /* fiche de la ville, depuis l'en-tête de la liste */

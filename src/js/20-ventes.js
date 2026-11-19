@@ -1,14 +1,27 @@
 /* ---------- ventes du type choisi (studios, T2, T3 à vendre) ---------- */
 const VTURL="https://www.bienici.com/annonce/vente/";
+/* sources des ventes : Bien'ici (lien = chemin après VTURL) ; les autres (notaires, depuis le 19 novembre 2026 : tools/notaires.mjs)
+   gardent leur adresse complète à la place du chemin. Lien, nom de la source et identifiant (dernier segment, adId) en découlent. */
+const SRCS=[["immobilier.notaires.fr","les notaires","notaires"]];
+const venteUrl=suf=>/^https?:\/\//.test(suf||"")?suf:VTURL+suf;
+const srcOf=suf=>{const u=String(suf||""), s=/^https?:/.test(u)&&SRCS.find(([h])=>u.includes(h)); return s?s[1]:"Bien'ici";};
+const srcCle=suf=>{const u=String(suf||""), s=/^https?:/.test(u)&&SRCS.find(([h])=>u.includes(h)); return s?s[2]:"bienici";};
 const VC=new Map();
-function venteIris(ck,sector){const A=ADS[ck], z=IR[ck]; if(!A||!z||!A.map[sector]) return null;
+/* secteur d'une autre source (notaires : « PONTLIEUE », « HEUZE - ST GEORGES ») : un quartier IRIS de la ville au nom exactement égal,
+   aux accents, à « St/Ste » et au numéro près (« Pontlieue 2 ») ; sinon rien, et le calcul reste celui de la ville */
+const nomQ=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\bste?\b/g,m=>m==="st"?"saint":"sainte").replace(/[^a-z0-9]+/g," ").trim();
+function venteIrisNom(ck,sector){const z=IR[ck]; if(!z||!sector) return null;
+ for(const p of String(sector).split(/\s+-\s+|\//).map(nomQ).filter(p=>p.length>=4)){const ts=z.list.filter(t=>t.price&&nomQ(t.name).replace(/ \d+$/,"")===p);
+  if(ts.length) return ts.sort((a,b)=>b.dpe.reduce((x,y)=>x+y,0)-a.dpe.reduce((x,y)=>x+y,0))[0];}
+ return null;}
+function venteIris(ck,sector){const A=ADS[ck], z=IR[ck]; if(A&&z&&!A.map[sector]) return venteIrisNom(ck,sector); if(!A||!z||!A.map[sector]) return null;
  const ts=z.list.filter(t=>A.map[sector].includes(t.code)&&t.price); return ts.sort((a,b)=>b.dpe.reduce((x,y)=>x+y,0)-a.dpe.reduce((x,y)=>x+y,0))[0]||null;}
-function venteBien(ck,a){const t=venteIrisA(ck,a), f=ficx(a[3]), cop=copAn(f), ia=lueIA(f); return avecSaisies({type:H.type,ville:ck,quartier:t?t.name:"",prix:a[2],surface:a[0],dpe:f&&f.dpe||"",copro:cop?Math.round(cop/12*PART_PROPRIO):0,loyer:ia.loyer,travaux:ia.travaux,tf:ia.tf,url:VTURL+a[3],titre:`${TY().lab} ${String(a[0]).replace(".",",")} m²${a[1]?" · "+a[1]:""}`,secteur:a[1]});}
+function venteBien(ck,a){const t=venteIrisA(ck,a), f=ficx(a[3]), cop=copAn(f), ia=lueIA(f); return avecSaisies({type:H.type,ville:ck,quartier:t?t.name:"",prix:a[2],surface:a[0],dpe:f&&f.dpe||"",copro:cop?Math.round(cop/12*PART_PROPRIO):0,loyer:ia.loyer,travaux:ia.travaux,tf:ia.tf,url:venteUrl(a[3]),titre:`${TY().lab} ${String(a[0]).replace(".",",")} m²${a[1]?" · "+a[1]:""}`,secteur:a[1]});}
 function venteCalc(ck,a){const k=ck+a[3]; if(!VC.has(k)) VC.set(k,calcBien(venteBien(ck,a))); return VC.get(k);}
 const allVentes=()=>Object.entries(ADS).filter(([k,v])=>v&&v.ventes).flatMap(([ck,v])=>v.ventes.filter(a=>!estDoublon(a[3])).map(a=>({ck,a,r:venteCalc(ck,a)})));
 /* une annonce retirée de la shortlist redevient une annonce comme les autres (son bien est gardé caché, avec ses notes et sa visite, et revient si on la rajoute) */
 const isAdded=url=>BIENS.some(b=>b.url===url&&!isOut(b));
-function addBtn(ck,a,big){const u=VTURL+a[3]; return isAdded(u)?`<span class="pill p-ok">✓ dans nos biens</span>`:`<button type="button" class="btn${big?"":" sm"} addv" data-addv="${ck}|${esc(a[3])}" aria-label="Ajouter à nos biens">+${big?" Ajouter à nos biens":`<span class="lbl"> Ajouter</span>`}</button>`;}
+function addBtn(ck,a,big){const u=venteUrl(a[3]); return isAdded(u)?`<span class="pill p-ok">✓ dans nos biens</span>`:`<button type="button" class="btn${big?"":" sm"} addv" data-addv="${ck}|${esc(a[3])}" aria-label="Ajouter à nos biens">+${big?" Ajouter à nos biens":`<span class="lbl"> Ajouter</span>`}</button>`;}
 function ventesTable(ck,list,sector){const rows=list.map(a=>({a,r:venteCalc(ck,a)})).sort((x,y)=>(y.r.x.irr??-99)-(x.r.x.irr??-99));
  return `<div class="scrollbox"><table class="adt vt"><thead><tr><th></th>${sector?"<th>Secteur</th>":""}<th class="r">m²</th><th class="r">Prix</th><th class="r hm">€/m²</th><th class="r">Cash-flow</th><th class="r">15 ans</th><th></th></tr></thead><tbody>${rows.map(({a,r})=>{const [bc]=bank(r.x.ratio);
   const hv=vu("v",ck,a[3]); return `<tr class="clk" tabindex="0" data-ad="v|${ck}|${esc(a[3])}"${hv&&hv.last?' data-drop="1"':""}><td class="tcell">${thumbHtml(a[3],a[4])}</td>${sector?`<td class="c-sec">${esc(a[1]||"non précisé")}</td>`:""}<td class="r mono c-m2">${String(a[0]).replace(".",",")}</td><td class="r mono c-px">${keur(a[2])}${vuBadges("v",ck,a[3])?`<div class="hbs">${vuBadges("v",ck,a[3])}</div>`:""}</td><td class="r mono hm c-pm">${eur(a[2]/a[0])}</td><td class="r mono c-cf ${r.x.cf>=0?"pos":"neg"}">${sgn(r.x.cf)}</td><td class="r mono c-irr" style="color:${colIrr(r.x.irr)};font-weight:700">${r.x.irr==null?"n.d.":pct(r.x.irr)}${bc==="p-bad"?' <span title="banque trop juste">⚠</span>':""}</td><td class="c-act" style="white-space:nowrap"><a class="hm" href="${VTURL}${esc(a[3])}" target="_blank" rel="noopener">voir</a> ${addBtn(ck,a)}</td></tr>`;}).join("")}</tbody></table></div>
@@ -18,7 +31,7 @@ function ventesCity(ck){const A=ADS[ck]; if(!A||!A.ventes||!A.ventes.length) ret
  return fRows([["À vendre en ligne",`${tyN(A.ventes.length)} · médiane <b class="mono">${eur(pm)}/m²</b>`,`${fPct(pm,studioPm2(ck,null,"studio"),"calcul")} · frais d'agence et marge de négociation compris`]]);}
 document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("[data-addv]"); if(!b) return; e.preventDefault();
  const [ck,suf]=b.dataset.addv.split("|"), a=(ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a||!DB) return;
- const old=BIENS.find(x=>x.url===VTURL+suf);
+ const old=BIENS.find(x=>x.url===venteUrl(suf));
  if(old){b.disabled=true; await updBien(old.id,{statut:old.statut==="écarté"?"à voir":old.statut,short:true}); toast(`« ${old.titre||"Bien"} » remis dans nos biens, avec ses notes.`); return;}
  const vb=venteBien(ck,a), bien={titre:vb.titre,url:vb.url,ville:ck,quartier:vb.quartier,type:vb.type,prix:a[2],surface:a[0],copro:0,tf:0,loyer:0,travaux:0,dpe:vb.dpe||"",notes:"",statut:"à voir",fav:false,par:myName(),ts:Date.now()};
  b.disabled=true; b.textContent="ajout…";

@@ -1,5 +1,5 @@
 /* ---------- fiche complète d'un de nos biens (panneau de droite / feuille du bas) ---------- */
-function bienSuf(b){return (b.url||"").startsWith(VTURL)?b.url.slice(VTURL.length).split("?")[0]:null;}
+function bienSuf(b){const u=b.url||""; return u.startsWith(VTURL)?u.slice(VTURL.length).split("?")[0]:SRCS.some(([h])=>u.includes(h))?u.split("?")[0]:null;}   /* autre source : le lien est le chemin (src/js/20-ventes.js) */
 function bienPhoto(b,w,h){const s=bienSuf(b); if(!s) return ""; const a=findAd("v",b.ville,s); const p=a?a[4]:(HIST[b.ville]&&HIST[b.ville].v&&HIST[b.ville].v[s]?HIST[b.ville].v[s].m[2]:""); return p?photoUrl(s,p,w,h):"";}
 
 /* retirer / remettre dans la shortlist (sans changer le statut) */

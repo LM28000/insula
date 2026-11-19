@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-/* Relevé quotidien sur le Mac, sans la routine Claude : les pages de résultats de Bien'ici, puis les fiches des annonces nouvelles.
+/* Relevé quotidien sans la routine Claude : les pages de résultats de Bien'ici, les annonces des notaires (tools/notaires.mjs),
+   puis les fiches des annonces nouvelles, chacune sur son site.
    Mêmes pages (tools/releve_plan.py), mêmes scripts de lecture (tools/extraction-bienici.js, tools/fiches-bienici.js), même rythme
    qu'un visiteur : une page à la fois, 8 à 14 s entre deux pages (au hasard), 1,5 s entre deux fiches. Le 19 novembre 2026, à une page
    toutes les 3 à 4 s, Bien'ici a cessé d'afficher ses annonces au bout de 213 pages. Arrêt au premier refus du site : on ne contourne pas
@@ -8,7 +9,7 @@
    node tools/releve.mjs                   relevé et fiches → data/releve-du-jour.json, data/fiches-du-jour.json
    node tools/releve.mjs --publier         puis maj_annonces.py, fiches.py merge, build.py, supabase_annonces.py push (comme la routine)
    node tools/releve.mjs --essai DOSSIER   essai : écrit dans DOSSIER, ne touche à rien d'autre ; avec --listes N (les N premières listes)
-                                           et --fiches N (N fiches au plus)
+                                           et --fiches N (N fiches au plus) ; --sans-notaires : Bien'ici seulement
    La lecture des descriptions (« vendu loué », loyer, travaux…) reste à Claude : tools/fiches.py a-lire, puis lu. */
 import {chromium} from "playwright";
 import {execFileSync} from "node:child_process";
@@ -16,6 +17,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
+import {releveNotaires, fichesNotaires, estNotaire} from "./notaires.mjs";
 
 const R = path.dirname(path.dirname(fileURLToPath(import.meta.url)));   /* le dossier a des espaces : pas de pathname brut */
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -28,7 +30,8 @@ const py = (...a) => execFileSync("python3", a, {cwd: R, encoding: "utf-8", env:
 const pause = ms => new Promise(r => setTimeout(r, ms));
 const EXTR = fs.readFileSync(path.join(R, "tools", "extraction-bienici.js"), "utf-8");
 const FICH = fs.readFileSync(path.join(R, "tools", "fiches-bienici.js"), "utf-8");
-const bilan = {listes: 0, ok: 0, echecs: [], pages: 0, annonces: 0, fiches: 0, stop: null};
+const NOT = !process.argv.includes("--sans-notaires");
+const bilan = {listes: 0, ok: 0, echecs: [], pages: 0, annonces: 0, fiches: 0, stop: null, notaires: null};
 
 class Refus extends Error {}
 fs.mkdirSync(OUT, {recursive: true}); fs.mkdirSync(PROFIL, {recursive: true});
@@ -77,6 +80,20 @@ try {
 } catch (e) { bilan.stop = e.message; log("ARRÊT :", e.message); }
 
 if (bilan.stop) { await ctx.close(); console.log(JSON.stringify(bilan)); process.exit(2); }   /* relevé arrêté : rien n'est écrit, rien n'est publié */
+
+/* les notaires, dans un second onglet : leurs ventes s'ajoutent à la liste Bien'ici de la même ville et du même type, si elle a été
+   relevée (sans elle, la liste de la veille reste entière) ; un refus des notaires n'arrête pas le relevé de Bien'ici */
+const pageN = NOT ? await ctx.newPage() : null, NOTIDS = new Set();
+if (NOT) try {
+  const {out, bilan: bn} = await releveNotaires(pageN, plan, R, log); let ajout = 0;
+  for (const [ck, T] of Object.entries(out)) for (const [ty, rows] of Object.entries(T)) {
+    const v = villes[ck], dst = !v ? null : ty === "studio" ? v : v[ty];
+    if (!dst || !dst.ventes) continue;
+    const vus = new Set(dst.ventes.map(x => x[3]));
+    for (const x of rows) if (!vus.has(x[3])) { dst.ventes.push(x); vus.add(x[3]); NOTIDS.add(String(x[3]).split("/").pop()); ajout++; }
+  }
+  bilan.notaires = Object.assign(bn, {ajoutees: ajout}); bilan.annonces += ajout; log(`notaires : ${ajout} annonces ajoutées aux listes`);
+} catch (e) { bilan.notaires = {erreur: e.message}; log("✗ notaires :", e.message); }
 const RELEVE = path.join(OUT, "releve-du-jour.json");
 fs.writeFileSync(RELEVE, JSON.stringify({date: plan.date, plafond: plan.plafond, villes}));
 log(`relevé écrit : ${RELEVE}`);
@@ -85,11 +102,15 @@ log(`relevé écrit : ${RELEVE}`);
 const lots = [];
 const todo = NF > 0 ? JSON.parse(py("tools/fiches.py", "todo", RELEVE, "--max", String(NF))) : {lots: []};
 log(`fiches : ${todo.manquantes ?? 0} manquantes, ${todo.lots.length} lots`);
-for (const lot of todo.lots) {
+const idsN = [];
+for (const lot0 of todo.lots) {
+  const lot = lot0.filter(x => !NOTIDS.has(String(x[0]))); idsN.push(...lot0.filter(x => NOTIDS.has(String(x[0]))));
+  if (!lot.length || bilan.stop) continue;
   const o = JSON.parse(await page.evaluate(FICH.replace("__IDS__", JSON.stringify(lot))));
   lots.push(o); bilan.fiches += o.n;
-  if (o.stop) { bilan.stop = `fiches : ${o.stop}`; log("ARRÊT des fiches :", o.stop); break; }
+  if (o.stop) { bilan.stop = `fiches : ${o.stop}`; log("ARRÊT des fiches :", o.stop); }
 }
+if (idsN.length) { const o = await fichesNotaires(pageN, idsN); lots.push(o); bilan.fiches += o.n; log(`fiches des notaires : ${o.n}${o.stop ? " (" + o.stop + ")" : ""}`); }
 fs.writeFileSync(path.join(OUT, "fiches-du-jour.json"), JSON.stringify({lots}));
 await ctx.close();
 

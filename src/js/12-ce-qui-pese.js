@@ -79,6 +79,6 @@ document.addEventListener("change",async e=>{const i=e.target.closest&&e.target.
  if(!DB){toast("Pour enregistrer, ouvrez « Nos biens » et indiquez le code de votre groupe."); return;}
  if(k==="b"){await updBien(r[0],{[f]:v}); return;}
  const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(z=>z[3]===suf); if(!a) return;
- const old=BIENS.find(x=>x.url===VTURL+suf); if(old){await updBien(old.id,Object.assign({[f]:v},isOut(old)?{statut:"à voir",short:true}:{})); return;}
+ const old=BIENS.find(x=>x.url===venteUrl(suf)); if(old){await updBien(old.id,Object.assign({[f]:v},isOut(old)?{statut:"à voir",short:true}:{})); return;}
  const vb=venteBien(ck,a), bien={titre:vb.titre,url:vb.url,ville:ck,quartier:vb.quartier,type:vb.type,prix:a[2],surface:a[0],copro:0,tf:0,loyer:0,travaux:0,dpe:vb.dpe||"",notes:"",statut:"à voir",fav:false,par:myName(),ts:Date.now()};
  bien[f]=v; try{await DB.collection("biens").add(bien); toast(`« ${vb.titre} » ajouté à nos biens avec cette valeur.`);}catch(err){toast("Enregistrement impossible ("+(err&&err.code||"erreur")+").");}});

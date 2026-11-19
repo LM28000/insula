@@ -135,4 +135,15 @@ ok('copropriété d\'une annonce : deux copropriétés possibles → aucune', a2
 ok('copropriété d\'une annonce : lots principaux reconnus ; position à 250 m sans année → aucune', a3.how === 'lots' && a3.x[2] === 'AA3' && a4.none === 'floue', JSON.stringify([a3, a4]));
 ok('copropriété d\'une annonce : sans nombre de lots → aucune', a5.none === 'lots', JSON.stringify(a5));
 
+// sources des ventes (src/js/20-ventes.js) : Bien'ici par son chemin, les notaires par leur adresse complète (tools/notaires.mjs)
+{ const src = rd('src/js/20-ventes.js'), ln = k => src.split('\n').find(l => l.startsWith(k));
+  run(['const VTURL', 'const SRCS', 'const venteUrl', 'const srcOf', 'const srcCle', 'const nomQ'].map(ln).join('\n') + '\n' + pick('src/js/20-ventes.js', 'function venteIrisNom'), 'sources');
+  run("const adId=suf=>String(suf||'').split('?')[0].split('/').pop();\n" + pick('src/js/30-annonces-fiche.js', 'const photoUrl').replace(/;$/, '') + ';', 'photoUrl');
+  const N = 'https://www.immobilier.notaires.fr/fr/annonce-immo/vente/appartement/le-mans-72/2107652';
+  ok('source : un chemin Bien\'ici donne son lien Bien\'ici', E(`venteUrl("le-mans-72000/appartement-2pieces/ag1")`) === 'https://www.bienici.com/annonce/vente/le-mans-72000/appartement-2pieces/ag1' && E(`srcCle("le-mans/x/ag1")`) === 'bienici');
+  ok('source : une annonce des notaires garde son adresse, sa source et son identifiant', E(`venteUrl(${JSON.stringify(N)})`) === N && E(`srcOf(${JSON.stringify(N)})`) === 'les notaires' && E(`srcCle(${JSON.stringify(N)})`) === 'notaires' && E(`adId(${JSON.stringify(N)})`) === '2107652');
+  ok('source : la photo d\'une autre source est prise telle quelle', E(`photoUrl(${JSON.stringify(N)},"https://media.immobilier.notaires.fr/a_VGA.jpg",160,120)`) === 'https://media.immobilier.notaires.fr/a_VGA.jpg' && /file\.bienici\.com\/photo\/ag1_p\.jpg/.test(E(`photoUrl("x/ag1","p.jpg",160,120)`)));
+  E(`var IR={lemans:{list:[{name:"Pontlieue 1",price:1,dpe:[1]},{name:"Pontlieue 2",price:1,dpe:[5]},{name:"Saint-Georges",price:1,dpe:[2]},{name:"Gare Nord",price:1,dpe:[1]}]}}`);
+  ok('quartier d\'une annonce des notaires : le nom écrit en tête, aux accents, « St » et numéros près ; rien de vague', E('venteIrisNom("lemans","Pontlieue").name') === 'Pontlieue 2' && E('venteIrisNom("lemans","Heuze - St Georges").name') === 'Saint-Georges' && E('venteIrisNom("lemans","Gare")') === null && E('venteIrisNom("lemans","")') === null); }
+
 console.log(`\n${n - bad}/${n} tests unitaires réussis`); process.exit(bad ? 1 : 0);

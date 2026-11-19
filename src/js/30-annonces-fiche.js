@@ -1,5 +1,6 @@
 /* ---------- photos des annonces (vignettes Bien'ici) ---------- */
-const photoUrl=(suf,p,w,h)=>{if(!p) return ""; const id=(suf||"").split("/").pop(); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p)+`?width=${w}&height=${h}&fit=cover`;};
+const photoUrl=(suf,p,w,h)=>{if(!p) return ""; if(/^https?:/.test(p)) return p;   /* autre source : l'adresse complète de sa photo */
+ const id=(suf||"").split("/").pop(); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p)+`?width=${w}&height=${h}&fit=cover`;};
 const thumbHtml=(suf,p)=>p?`<img class="thb" src="${esc(photoUrl(suf,p,160,120))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thb nophoto'}))">`:`<span class="thb nophoto"></span>`;
 
 const sectorOf=t=>{const A=ADS[t.ck]; return A?Object.keys(A.map).find(k=>A.map[k].includes(t.code)):null;};

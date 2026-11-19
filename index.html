@@ -2278,7 +2278,7 @@ document.addEventListener("change",async e=>{const i=e.target.closest&&e.target.
  if(!DB){toast("Pour enregistrer, ouvrez « Nos biens » et indiquez le code de votre groupe."); return;}
  if(k==="b"){await updBien(r[0],{[f]:v}); return;}
  const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(z=>z[3]===suf); if(!a) return;
- const old=BIENS.find(x=>x.url===VTURL+suf); if(old){await updBien(old.id,Object.assign({[f]:v},isOut(old)?{statut:"à voir",short:true}:{})); return;}
+ const old=BIENS.find(x=>x.url===venteUrl(suf)); if(old){await updBien(old.id,Object.assign({[f]:v},isOut(old)?{statut:"à voir",short:true}:{})); return;}
  const vb=venteBien(ck,a), bien={titre:vb.titre,url:vb.url,ville:ck,quartier:vb.quartier,type:vb.type,prix:a[2],surface:a[0],copro:0,tf:0,loyer:0,travaux:0,dpe:vb.dpe||"",notes:"",statut:"à voir",fav:false,par:myName(),ts:Date.now()};
  bien[f]=v; try{await DB.collection("biens").add(bien); toast(`« ${vb.titre} » ajouté à nos biens avec cette valeur.`);}catch(err){toast("Enregistrement impossible ("+(err&&err.code||"erreur")+").");}});
 
@@ -2375,15 +2375,28 @@ function regReset(){HYPK.forEach(k=>{if(HDEF[k]!=null) H[k]=HDEF[k];}); FINK.for
 
 /* ---------- ventes du type choisi (studios, T2, T3 à vendre) ---------- */
 const VTURL="https://www.bienici.com/annonce/vente/";
+/* sources des ventes : Bien'ici (lien = chemin après VTURL) ; les autres (notaires, depuis le 19 novembre 2026 : tools/notaires.mjs)
+   gardent leur adresse complète à la place du chemin. Lien, nom de la source et identifiant (dernier segment, adId) en découlent. */
+const SRCS=[["immobilier.notaires.fr","les notaires","notaires"]];
+const venteUrl=suf=>/^https?:\/\//.test(suf||"")?suf:VTURL+suf;
+const srcOf=suf=>{const u=String(suf||""), s=/^https?:/.test(u)&&SRCS.find(([h])=>u.includes(h)); return s?s[1]:"Bien'ici";};
+const srcCle=suf=>{const u=String(suf||""), s=/^https?:/.test(u)&&SRCS.find(([h])=>u.includes(h)); return s?s[2]:"bienici";};
 const VC=new Map();
-function venteIris(ck,sector){const A=ADS[ck], z=IR[ck]; if(!A||!z||!A.map[sector]) return null;
+/* secteur d'une autre source (notaires : « PONTLIEUE », « HEUZE - ST GEORGES ») : un quartier IRIS de la ville au nom exactement égal,
+   aux accents, à « St/Ste » et au numéro près (« Pontlieue 2 ») ; sinon rien, et le calcul reste celui de la ville */
+const nomQ=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\bste?\b/g,m=>m==="st"?"saint":"sainte").replace(/[^a-z0-9]+/g," ").trim();
+function venteIrisNom(ck,sector){const z=IR[ck]; if(!z||!sector) return null;
+ for(const p of String(sector).split(/\s+-\s+|\//).map(nomQ).filter(p=>p.length>=4)){const ts=z.list.filter(t=>t.price&&nomQ(t.name).replace(/ \d+$/,"")===p);
+  if(ts.length) return ts.sort((a,b)=>b.dpe.reduce((x,y)=>x+y,0)-a.dpe.reduce((x,y)=>x+y,0))[0];}
+ return null;}
+function venteIris(ck,sector){const A=ADS[ck], z=IR[ck]; if(A&&z&&!A.map[sector]) return venteIrisNom(ck,sector); if(!A||!z||!A.map[sector]) return null;
  const ts=z.list.filter(t=>A.map[sector].includes(t.code)&&t.price); return ts.sort((a,b)=>b.dpe.reduce((x,y)=>x+y,0)-a.dpe.reduce((x,y)=>x+y,0))[0]||null;}
-function venteBien(ck,a){const t=venteIrisA(ck,a), f=ficx(a[3]), cop=copAn(f), ia=lueIA(f); return avecSaisies({type:H.type,ville:ck,quartier:t?t.name:"",prix:a[2],surface:a[0],dpe:f&&f.dpe||"",copro:cop?Math.round(cop/12*PART_PROPRIO):0,loyer:ia.loyer,travaux:ia.travaux,tf:ia.tf,url:VTURL+a[3],titre:`${TY().lab} ${String(a[0]).replace(".",",")} m²${a[1]?" · "+a[1]:""}`,secteur:a[1]});}
+function venteBien(ck,a){const t=venteIrisA(ck,a), f=ficx(a[3]), cop=copAn(f), ia=lueIA(f); return avecSaisies({type:H.type,ville:ck,quartier:t?t.name:"",prix:a[2],surface:a[0],dpe:f&&f.dpe||"",copro:cop?Math.round(cop/12*PART_PROPRIO):0,loyer:ia.loyer,travaux:ia.travaux,tf:ia.tf,url:venteUrl(a[3]),titre:`${TY().lab} ${String(a[0]).replace(".",",")} m²${a[1]?" · "+a[1]:""}`,secteur:a[1]});}
 function venteCalc(ck,a){const k=ck+a[3]; if(!VC.has(k)) VC.set(k,calcBien(venteBien(ck,a))); return VC.get(k);}
 const allVentes=()=>Object.entries(ADS).filter(([k,v])=>v&&v.ventes).flatMap(([ck,v])=>v.ventes.filter(a=>!estDoublon(a[3])).map(a=>({ck,a,r:venteCalc(ck,a)})));
 /* une annonce retirée de la shortlist redevient une annonce comme les autres (son bien est gardé caché, avec ses notes et sa visite, et revient si on la rajoute) */
 const isAdded=url=>BIENS.some(b=>b.url===url&&!isOut(b));
-function addBtn(ck,a,big){const u=VTURL+a[3]; return isAdded(u)?`<span class="pill p-ok">✓ dans nos biens</span>`:`<button type="button" class="btn${big?"":" sm"} addv" data-addv="${ck}|${esc(a[3])}" aria-label="Ajouter à nos biens">+${big?" Ajouter à nos biens":`<span class="lbl"> Ajouter</span>`}</button>`;}
+function addBtn(ck,a,big){const u=venteUrl(a[3]); return isAdded(u)?`<span class="pill p-ok">✓ dans nos biens</span>`:`<button type="button" class="btn${big?"":" sm"} addv" data-addv="${ck}|${esc(a[3])}" aria-label="Ajouter à nos biens">+${big?" Ajouter à nos biens":`<span class="lbl"> Ajouter</span>`}</button>`;}
 function ventesTable(ck,list,sector){const rows=list.map(a=>({a,r:venteCalc(ck,a)})).sort((x,y)=>(y.r.x.irr??-99)-(x.r.x.irr??-99));
  return `<div class="scrollbox"><table class="adt vt"><thead><tr><th></th>${sector?"<th>Secteur</th>":""}<th class="r">m²</th><th class="r">Prix</th><th class="r hm">€/m²</th><th class="r">Cash-flow</th><th class="r">15 ans</th><th></th></tr></thead><tbody>${rows.map(({a,r})=>{const [bc]=bank(r.x.ratio);
   const hv=vu("v",ck,a[3]); return `<tr class="clk" tabindex="0" data-ad="v|${ck}|${esc(a[3])}"${hv&&hv.last?' data-drop="1"':""}><td class="tcell">${thumbHtml(a[3],a[4])}</td>${sector?`<td class="c-sec">${esc(a[1]||"non précisé")}</td>`:""}<td class="r mono c-m2">${String(a[0]).replace(".",",")}</td><td class="r mono c-px">${keur(a[2])}${vuBadges("v",ck,a[3])?`<div class="hbs">${vuBadges("v",ck,a[3])}</div>`:""}</td><td class="r mono hm c-pm">${eur(a[2]/a[0])}</td><td class="r mono c-cf ${r.x.cf>=0?"pos":"neg"}">${sgn(r.x.cf)}</td><td class="r mono c-irr" style="color:${colIrr(r.x.irr)};font-weight:700">${r.x.irr==null?"n.d.":pct(r.x.irr)}${bc==="p-bad"?' <span title="banque trop juste">⚠</span>':""}</td><td class="c-act" style="white-space:nowrap"><a class="hm" href="${VTURL}${esc(a[3])}" target="_blank" rel="noopener">voir</a> ${addBtn(ck,a)}</td></tr>`;}).join("")}</tbody></table></div>
@@ -2393,7 +2406,7 @@ function ventesCity(ck){const A=ADS[ck]; if(!A||!A.ventes||!A.ventes.length) ret
  return fRows([["À vendre en ligne",`${tyN(A.ventes.length)} · médiane <b class="mono">${eur(pm)}/m²</b>`,`${fPct(pm,studioPm2(ck,null,"studio"),"calcul")} · frais d'agence et marge de négociation compris`]]);}
 document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("[data-addv]"); if(!b) return; e.preventDefault();
  const [ck,suf]=b.dataset.addv.split("|"), a=(ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a||!DB) return;
- const old=BIENS.find(x=>x.url===VTURL+suf);
+ const old=BIENS.find(x=>x.url===venteUrl(suf));
  if(old){b.disabled=true; await updBien(old.id,{statut:old.statut==="écarté"?"à voir":old.statut,short:true}); toast(`« ${old.titre||"Bien"} » remis dans nos biens, avec ses notes.`); return;}
  const vb=venteBien(ck,a), bien={titre:vb.titre,url:vb.url,ville:ck,quartier:vb.quartier,type:vb.type,prix:a[2],surface:a[0],copro:0,tf:0,loyer:0,travaux:0,dpe:vb.dpe||"",notes:"",statut:"à voir",fav:false,par:myName(),ts:Date.now()};
  b.disabled=true; b.textContent="ajout…";
@@ -2605,11 +2618,11 @@ const DPEW={elec:"électricité comptée 1,7 fois au lieu de 2,3 (ou 1,9 en 2026
 const dpeAJ=suf=>{const x=ficx(suf); return x&&x.dpe0?x:null;};
 const dpeNote=x=>x?`annoncé ${x.dpe0} ; ${x.dpe} avec le calcul en vigueur au 1er janvier 2027 (${DPEW[x.dpeW]||"nouveau calcul"}). Estimation : demandez au vendeur l'étiquette à jour, gratuite sur l'Observatoire DPE de l'ADEME.`:"";
 
-const photoFull=(suf,p)=>{const id=adId(suf); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p);};
+const photoFull=(suf,p)=>{if(/^https?:/.test(p)) return p; const id=adId(suf); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p);};
 const etTxt=f=>f.et==null?"":(f.et===0?"rez-de-chaussée":`${f.et}${f.et===1?"er":"e"} étage`)+(f.ets?` sur ${f.ets}`:"")+(f.asc===true?", avec ascenseur":f.asc===false?", sans ascenseur":"");
 const frD=s=>{if(!s) return ""; const [y,m,d]=s.split("-"); return `${+d} ${MOISC[+m-1]} ${y}`;};
 const MOISC=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
-function ficheNone(suf){return `<p class="sub" style="margin:0">La fiche complète de cette annonce n'a pas encore été relevée : elle le sera lors d'un prochain relevé. <a href="${esc(VTURL+suf)}" target="_blank" rel="noopener">Voir sur Bien'ici ↗</a></p>`;}
+function ficheNone(suf){return `<p class="sub" style="margin:0">La fiche complète de cette annonce n'a pas encore été relevée : elle le sera lors d'un prochain relevé. <a href="${esc(venteUrl(suf))}" target="_blank" rel="noopener">Voir sur Bien'ici ↗</a></p>`;}
 function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon${f.balc>1?"s":""}`,f.terr&&`${f.terr} terrasse${f.terr>1?"s":""}`,f.park&&`${f.park} parking${f.park>1?"s":""}`,f.cave&&`${f.cave} cave${f.cave>1?"s":""}`].filter(Boolean);
  const fx=ficx(suf)||{}, cop=copAn(f)||copAn(fx), copD=!copAn(f)&&!!fx.copD, rows=[   /* charges : Bien'ici, sinon lues dans la description (tools/fiches.py cop_desc) ou chez un doublon */
   f.surf&&["Surface",`<b class="mono">${fr(f.surf,f.surf%1?2:0)} m²</b>${f.pcs?` · ${f.pcs} pièce${f.pcs>1?"s":""}`:""}`],
@@ -2627,7 +2640,7 @@ function ficheHtml(ck,suf,f){const loc=f.k==="l", ext=[f.balc&&`${f.balc} balcon
  /* une longue description : le début, puis « Lire la suite » ouvre la fin seulement (avant, la description entière, et le début s'affichait deux fois) */
  const desc=d?`<div class="fdesc">${esc(cut>0?d.slice(0,cut)+"…":d)}</div>${cut>0?`<details class="fdmore"><summary>Lire la suite</summary><div class="fdesc">…${esc(d.slice(cut).trim())}</div></details>`:""}`:`<p class="sub">Pas de description.</p>`;
  const ph=(f.ph||[]).map((p,i)=>`<a href="${esc(photoFull(suf,p))}" target="_blank" rel="noopener" aria-label="Photo ${i+1} sur ${f.ph.length}, en grand"><img src="${esc(photoUrl(suf,p,360,270))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>`).join("");
- return `${ph?`<div class="fgal">${ph}</div>`:""}${rows.length?fRows(rows):""}${desc}${iaHtml(f,ck,suf)}<p class="sub" style="margin:6px 0 0">Fiche relevée sur Bien'ici le ${frD(f.lu)}.</p>`;}
+ return `${ph?`<div class="fgal">${ph}</div>`:""}${rows.length?fRows(rows):""}${desc}${iaHtml(f,ck,suf)}<p class="sub" style="margin:6px 0 0">Fiche relevée sur ${srcOf(suf)==='Bien\'ici'?"Bien'ici":'le site des notaires'} le ${frD(f.lu)}${f.notaire?` · notaire : ${esc(f.notaire)}`:""}.</p>`;}
 function ficheSum(f,suf){if(f===undefined) return "chargement…"; if(!f) return "pas encore relevée"; const n=(f.ph||[]).length, x=suf?dpeAJ(suf):null;
  return [f.d&&"description",n&&`${n} photo${n>1?"s":""}`,f.dpe&&`DPE ${x?x.dpe+" (annoncé "+f.dpe+")":f.dpe}`,(copAn(f)||copAn(ficx(suf)||{}))&&`${eur((copAn(f)||copAn(ficx(suf)))/12)}/mois de copro`,f.coloc&&"colocation"].filter(Boolean).join(" · ");}
 /* rubrique « L'annonce » des fiches (ordinateur et téléphone) */
@@ -2988,7 +3001,8 @@ async function annoncesCloud(){const code=typeof sbCode==="function"?sbCode():""
 setTimeout(annoncesCloud,0);
 
 /* ---------- photos des annonces (vignettes Bien'ici) ---------- */
-const photoUrl=(suf,p,w,h)=>{if(!p) return ""; const id=(suf||"").split("/").pop(); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p)+`?width=${w}&height=${h}&fit=cover`;};
+const photoUrl=(suf,p,w,h)=>{if(!p) return ""; if(/^https?:/.test(p)) return p;   /* autre source : l'adresse complète de sa photo */
+ const id=(suf||"").split("/").pop(); return "https://file.bienici.com/photo/"+(p[0]==="!"?p.slice(1):id+"_"+p)+`?width=${w}&height=${h}&fit=cover`;};
 const thumbHtml=(suf,p)=>p?`<img class="thb" src="${esc(photoUrl(suf,p,160,120))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thb nophoto'}))">`:`<span class="thb nophoto"></span>`;
 
 const sectorOf=t=>{const A=ADS[t.ck]; return A?Object.keys(A.map).find(k=>A.map[k].includes(t.code)):null;};
@@ -3187,7 +3201,7 @@ addEventListener("keydown",e=>{if(e.key!=="Tab") return; const top=["fichePanel"
  if(!top.contains(cur)){e.preventDefault(); a.focus();} else if(e.shiftKey&&cur===a){e.preventDefault(); z.focus();} else if(!e.shiftKey&&cur===z){e.preventDefault(); a.focus();}},true);
 
 /* ---------- fiche complète d'un de nos biens (panneau de droite / feuille du bas) ---------- */
-function bienSuf(b){return (b.url||"").startsWith(VTURL)?b.url.slice(VTURL.length).split("?")[0]:null;}
+function bienSuf(b){const u=b.url||""; return u.startsWith(VTURL)?u.slice(VTURL.length).split("?")[0]:SRCS.some(([h])=>u.includes(h))?u.split("?")[0]:null;}   /* autre source : le lien est le chemin (src/js/20-ventes.js) */
 function bienPhoto(b,w,h){const s=bienSuf(b); if(!s) return ""; const a=findAd("v",b.ville,s); const p=a?a[4]:(HIST[b.ville]&&HIST[b.ville].v&&HIST[b.ville].v[s]?HIST[b.ville].v[s].m[2]:""); return p?photoUrl(s,p,w,h):"";}
 
 /* retirer / remettre dans la shortlist (sans changer le statut) */
@@ -3207,7 +3221,7 @@ async function retirer(b){const prev=b.statut||"à voir", t=b.titre||"Bien";
 /* ---------- fraîcheur des données ---------- */
 // relevé = date à laquelle la donnée a été récupérée ; age = âge maximal avant de la signaler (jours)
 const FRESH=[
- ["Annonces de location et de vente","<a href=\"https://www.bienici.com/\" target=\"_blank\" rel=\"noopener\">Bien'ici</a>, relevé quotidien des studios, T2 et T3","chaque jour",()=>{const d=Object.values(ADSRAW).filter(v=>v&&typeof v==="object"&&v.iso).map(v=>v.iso).sort()[0]; return d||ADS.iso;},2],
+ ["Annonces de location et de vente","<a href=\"https://www.bienici.com/\" target=\"_blank\" rel=\"noopener\">Bien'ici</a>, relevé quotidien des studios, T2 et T3 ; ventes aussi des <a href=\"https://www.immobilier.notaires.fr/\" target=\"_blank\" rel=\"noopener\">notaires</a> (immobilier.notaires.fr)","chaque jour",()=>{const d=Object.values(ADSRAW).filter(v=>v&&typeof v==="object"&&v.iso).map(v=>v.iso).sort()[0]; return d||ADS.iso;},2],
  ["Taux du crédit","Offres bancaires, profil emprunteur","novembre 2026","2026-11-05",60],
  ["Ventes réelles (DVF)","<a href=\"https://www.data.gouv.fr/datasets/demandes-de-valeurs-foncieres-geolocalisees/\" target=\"_blank\" rel=\"noopener\">DVF</a> : appartements vendus seuls, par nombre de pièces (studio, T2, T3), par ville et par quartier","2023 à 2025",()=>DVFALL.date,180],
  ["Temps de trajet à pied et à vélo","<a href=\"https://routing.openstreetmap.de/\" target=\"_blank\" rel=\"noopener\">OSRM sur OpenStreetMap</a>, jusqu'aux repères (gare la plus fréquentée, campus, mairie), depuis le centre de chaque quartier","réseau actuel","2026-11-06",365],
@@ -3318,7 +3332,7 @@ let MSEEN=null;           // date de la visite précédente (pour « nouveau »)
  else MSEEN=s.prev;}catch(_){}})();
 function hEntry(ck,suf){return HIST[ck]&&HIST[ck].v&&HIST[ck].v[suf];}
 function isNewAd(ck,suf){const e=hEntry(ck,suf); if(!e) return false; const pub=typeof pubOf==="function"&&pubOf("v",suf); if(pub&&(isoD(e.f)-isoD(pub))/DAY>7) return false; if(MSEEN) return e.f>MSEEN&&e.f>(hStart(ck,"v")||""); const v=vu("v",ck,suf); return !!(v&&v.isNew);}
-function adInfo(ck,a){const r=venteCalc(ck,a), v=vu("v",ck,a[3]), t=venteIrisA(ck,a), d=t?demandOf(t):null; return {ck,a,r,x:r.x,v,t,d,nw:isNewAd(ck,a[3]),url:VTURL+a[3]};}
+function adInfo(ck,a){const r=venteCalc(ck,a), v=vu("v",ck,a[3]), t=venteIrisA(ck,a), d=t?demandOf(t):null; return {ck,a,r,x:r.x,v,t,d,nw:isNewAd(ck,a[3]),url:venteUrl(a[3])};}
 function bienOf(url){return BIENS.find(b=>b.url===url)||null;}
 
 function kp(label,val,cls,sub){return `<div class="mk"><small>${label}</small><b class="${cls||""}">${val}</b>${sub?`<em>${sub}</em>`:""}</div>`;}
@@ -3328,7 +3342,7 @@ function feedList(F){F=F||MF; const out=[]; Object.entries(ADS).forEach(([ck,A])
  return out;}
 
 /* ajouter / retirer de la shortlist */
-async function mStar(ck,suf){const a=(ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a||!DB) return; const url=VTURL+suf, b=bienOf(url);
+async function mStar(ck,suf){const a=(ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a||!DB) return; const url=venteUrl(suf), b=bienOf(url);
  if(b&&!isOut(b)){await retirer(b); return;}
  if(b){await updBien(b.id,{statut:"à voir",short:true}); toast("Suivi à nouveau : il est dans Nos biens."); return;}
  const vb=venteBien(ck,a), bien={titre:vb.titre,url:vb.url,ville:ck,quartier:vb.quartier,type:vb.type,prix:a[2],surface:a[0],copro:0,tf:0,loyer:0,travaux:0,dpe:vb.dpe||"",notes:"",statut:"à voir",fav:false,par:myName(),ts:Date.now()};
@@ -4529,7 +4543,7 @@ render();
  /* « Combien ça coûte et rapporte ? » : le scénario affiché, les trois rendements, et à partir de quand on est gagnant si l'on revend */
  const argentX=(x,z)=>{const g=typeof gainTxt==="function"?gainTxt(x):""; return `${scnRow()}${z&&z.prudent!=null?`<p class="v2sub" style="margin:0">Rendement selon les hypothèses : prudentes ${pctS(z.prudent)}, centrales ${pctS(z.central??x.irr)}, favorables ${pctS(z.favorable)}.</p>`:""}${g?`<div class="v3gain"><b>Si on revend : ${g}</b><small>Gagnant : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et tout ce qu'on a sorti de notre poche (apport et mois négatifs).</small></div>`:""}`;};
  function bienOfSel(s){const [k,...r]=s.split("|"); if(k==="b"){const b=BIENS.find(x=>x.id===r[0]); return b?{b,kind:"b"}:null;}
-  if(k==="v"){const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a) return null; const ex=bienOf(VTURL+suf); return {b:Object.assign(venteBien(ck,a),{kind:"v",suf}),a,ck,suf,ex:ex&&!isOut(ex)?ex:null,kind:"v"};}
+  if(k==="v"){const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a) return null; const ex=bienOf(venteUrl(suf)); return {b:Object.assign(venteBien(ck,a),{kind:"v",suf}),a,ck,suf,ex:ex&&!isOut(ex)?ex:null,kind:"v"};}
   return null;}
  function prixNuage(b,t){const ty=H.type, D=typeof dvfC==="function"?dvfC(b.ville,ty):null, q=D&&t?D.q[t.code]:null, s=+b.surface||22, pm=+b.prix/s, ref=(t?studioPm2(b.ville,t,ty):studioPm2(b.ville,null,ty))*pm2Adj(ty,s);
   const pts=[]; (q&&q.last||[]).forEach(v=>pts.push({x:v[2],y:v[1]/v[2],c:cv("var(--muted)"),shape:"sq",t:`Vente ${v[0]} · ${eur(v[1])} · ${v[2]} m²`}));
@@ -4561,7 +4575,7 @@ render();
   const tit=String(R.kind==="b"?(b.titre||"Bien"):b.titre).split(" · ")[0], ann=R.kind==="v"?R.a[1]:b.quartier, qn=t?t.name:b.quartier||"";
   const psuf=R.kind==="v"?R.suf:(typeof bienSuf==="function"?bienSuf(b)||"":""), pf=psuf?ficheOf(b.ville,psuf):null, pn=pf&&pf.ph?pf.ph.length:0, hc=!!psuf&&horsCalcul(psuf);
   const hero=ph?`<button type="button" class="v3fph" data-v2photos="${esc(b.ville)}|${esc(psuf)}" aria-label="Voir les photos en grand"><img src="${esc(ph)}" alt="" referrerpolicy="no-referrer" onerror="this.closest('.v3fph').remove()"><span class="v2fthn">${pn>1?`${pn} photos`:"agrandir"}</span></button>`:"";
-  const badges=R.kind==="v"?ficheBadges(R.suf,true)||"":"";
+  const badges=(R.kind==="v"&&srcCle(R.suf)!=="bienici"?`<span class="v2pill" title="annonce relevée sur le site des notaires">annonce des notaires</span>`:"")+(R.kind==="v"?ficheBadges(R.suf,true)||"":"");
   const head=`<h2 class="v2ft">${keur(+b.prix)} · ${esc(tit)}</h2><p class="v2sub">${esc(cityName(b.ville))}${qn?" · quartier "+esc(qn):""}${ann&&qn&&ann!==qn?` <span title="nom du secteur dans l'annonce">(« ${esc(ann)} » dans l'annonce)</span>`:""} · ${eur(+b.prix/(+b.surface||1))}/m²${dpe?" · DPE "+esc(dpe):""} ${R.kind==="v"?_vuBadgesF("v",R.ck,R.suf):""}</p>${badges?`<div class="v2chips">${badges}</div>`:""}`;
   const nd=typeof docsN==="function"?docsN(b):0;
   const deux=bb?`<div class="v2sec v2adeux"><h3>À deux</h3><div class="v2vrow"><b>${esc(me||"Vous")}</b>${me?voteBtns(bb,me):`<button type="button" class="v2btn sm" data-v2tab="reglages">Votre prénom, dans Réglages</button>`}</div>${oth.map(o=>`<div class="v2vrow"><b>${esc(o)}</b>${voteTxt(bb,o)}</div>`).join("")}</div>`:"";
@@ -4773,7 +4787,7 @@ render();
   if(d.v2nas){const k=+d.v2nas, A=H.assoc.slice(0,k); while(A.length<k) A.push(assoc0(k)); A.forEach(a=>{a.part=100/k;}); H.assoc=A; assocNorm(); saveFin(); CALCC.clear(); VC.clear(); render(); return;}
   if(d.v2reset!=null){if(confirm(regShared()?`Revenir aux valeurs par défaut pour ${nous()} ? Vos critères et vos biens ne changent pas.`:"Revenir aux valeurs par défaut ? Vos critères et vos biens ne changent pas.")) regReset(); return;}
   if(d.v2offkeep){const [k,ck,...r]=d.v2offkeep.split("|"), suf=r.join("|"), P=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!P) return; const pr=Math.round(P[2]*(OFFT[d.v2offkeep]??100)/100/500)*500;
-   Promise.resolve(mStar(ck,suf)).then(()=>setTimeout(()=>{const b=bienOf(VTURL+suf); if(b){delete OFFT[d.v2offkeep]; updBien(b.id,{visite:Object.assign(visCopy(b),{offre:pr})});}},600)); return;}
+   Promise.resolve(mStar(ck,suf)).then(()=>setTimeout(()=>{const b=bienOf(venteUrl(suf)); if(b){delete OFFT[d.v2offkeep]; updBien(b.id,{visite:Object.assign(visCopy(b),{offre:pr})});}},600)); return;}
   if(d.v2min!=null){V.min=!V.min; save(); mapList(); return;}
   if(d.v2cfiche){openSel(`c|${d.v2cfiche}`); return;}
   if(d.v2photos!=null){const [c,...r]=d.v2photos.split("|"), im=t.querySelector("img"); lbOpen(c,r.join("|"),im&&im.src); return;}   /* photos en grand */   /* fiche de la ville, depuis l'en-tête de la liste */
