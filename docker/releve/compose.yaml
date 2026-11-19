@@ -9,6 +9,7 @@ services:
     environment:
       MODE: ${MODE:-essai}
       LISTES: ${LISTES:-}                # essai court : les N premières listes du plan
+      FICHES: ${FICHES:-}                # fiches lues au plus (150 sans rien) ; 300 du 20 au 27 novembre 2026 pour rattraper le retard
     network_mode: host                   # le réseau du serveur : sur le pont Docker, Chromium n'ouvrait pas les pages de Bien'ici (ERR_ABORTED)
     ulimits:
       core: 0                            # pas de vidage mémoire de Chromium dans le dépôt (sync.sh l'enregistrerait)

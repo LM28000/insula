@@ -11,7 +11,7 @@ git pull --rebase --quiet origin main || { echo "$(now) git pull impossible : re
 # annonces, historique et fiches : privés, dans Supabase ; le relevé part de la dernière version en ligne
 python3 tools/supabase_annonces.py pull --force || { echo "$(now) lecture de Supabase impossible : relevé annulé"; exit 1; }
 if [ "$MODE" = "publier" ]; then
-  node tools/releve.mjs --publier || { echo "$(now) relevé arrêté : rien n'est publié"; exit 2; }
+  node tools/releve.mjs --publier ${FICHES:+--fiches $FICHES} || { echo "$(now) relevé arrêté : rien n'est publié"; exit 2; }
   bash sync.sh
 else
   node tools/releve.mjs --essai "$HOME/.config/immobilier-tool/releve-essai" ${LISTES:+--listes $LISTES}

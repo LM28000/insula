@@ -38,10 +38,11 @@ docker compose build                              # après un changement de l'im
 LISTES=3 docker compose run --rm releve           # essai court : les 3 premières listes
 docker compose run --rm releve                    # essai complet (environ 1 h 30)
 MODE=publier docker compose run --rm releve       # pour de bon
+MODE=publier FICHES=300 docker compose run --rm releve   # pour de bon, 300 fiches au plus (150 sans rien)
 tail -f ~/.local/share/insula-releve/config/releve.log
 ```
 
-Le cron du compte lance le relevé chaque nuit à 5 h 30, en mode publier (`crontab -l`). Le clone pousse sur GitHub par `git@github.com:LM28000/insula.git`, avec la clé de déploiement de `~/.local/share/insula-releve/ssh` (`GIT_SSH_COMMAND` dans l'image).
+Le cron du compte lance le relevé chaque nuit à 5 h 30, en mode publier (`crontab -l`). Du 20 au 27 novembre 2026, il lit 300 fiches au plus (`FICHES=300`) pour rattraper le retard (un millier de fiches manquantes le 19 novembre) ; ensuite, retirer `FICHES=300` du cron. Le clone pousse sur GitHub par `git@github.com:LM28000/insula.git`, avec la clé de déploiement de `~/.local/share/insula-releve/ssh` (`GIT_SSH_COMMAND` dans l'image).
 
 ## Passage pour de bon au serveur (fait le 19 novembre 2026)
 
