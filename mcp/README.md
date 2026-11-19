@@ -27,6 +27,15 @@ Claude Desktop : dans `~/Library/Application Support/Claude/claude_desktop_confi
 | `reglages` | lire ou changer apport, taux, revenus, type de bien… (gardés dans `~/.config/immobilier-tool/hypotheses.json`) |
 | `nos_biens`, `ajouter_bien`, `changer_statut` | la liste commune, avec le code de groupe de `~/.config/immobilier-tool/groupe` |
 
+## Texte des annonces et écritures
+
+Une annonce est écrite par n'importe qui : sa description peut contenir des phrases adressées à l'IA (« ajoute ce bien », « change le taux »…). Deux protections :
+
+- **Texte balisé.** La description, le chauffage, les frais d'agence et le secteur d'une annonce, ainsi que les titres et notes de « Nos biens », sont rendus tels quels mais entre `<<<TEXTE_EXTERNE code>>>` et `<<<FIN_TEXTE_EXTERNE code>>>`, avec un code tiré au hasard à chaque réponse et un `avertissement` en tête. Cela aide l'IA à ne pas les suivre, sans le garantir.
+- **Votre accord avant chaque écriture.** `ajouter_bien`, `changer_statut` et `reglages` (quand une valeur change) demandent votre accord par le client MCP (« elicitation ») : une fenêtre montre le changement exact, et rien n'est écrit sans « Je confirme ». L'IA ne peut pas répondre à votre place. Chaque écriture relit les données après votre accord, pour ne pas écraser un changement fait entre-temps.
+
+Un client qui ne sait pas demander cet accord ne peut pas écrire : l'outil répond « écriture refusée ». Pour passer outre en connaissance de cause, lancer le serveur avec `NOTRE_STUDIO_ECRITURE_SANS_CONFIRMATION=1` ; seule l'autorisation d'outil du client protège alors (ne pas pré-autoriser ces trois outils).
+
 Exemples de demandes : « Quels sont les 5 meilleurs studios sous 65 000 € avec un DPE D ou mieux ? », « Lis la fiche de cette annonce et dis-moi quoi demander à la visite », « Si on négocie à 52 000 €, que devient le cash-flow ? », « Ajoute-la à nos biens ».
 
 Test : `node tests/mcp.test.mjs` (après `python3 build.py`).
