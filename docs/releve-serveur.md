@@ -50,3 +50,4 @@ Le cron du compte lance le relevé chaque nuit à 5 h 30, en essai pour l'instan
 3. **Passer le cron en `MODE=publier`.**
 4. **Le même jour, réduire la routine Claude** à la lecture des descriptions et aux messages. Une routine qui relèverait encore Bien'ici seule ferait disparaître les annonces des notaires de ses relevés : au bout de deux jours, `maj_annonces.py` les compterait vendues.
 5. **Sur le Mac**, avant de construire la page, reprendre les annonces du serveur : `python3 tools/supabase_annonces.py pull --force`.
+6. **Sur le Mac, installer la copie du résumé de la nuit** pour la routine version 9 : `./install-resume.sh`. La routine lit des textes écrits par des tiers avec un accès au Mac (audit F6/F7) : elle ne reçoit aucun accès au serveur.
