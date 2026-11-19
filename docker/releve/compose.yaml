@@ -1,0 +1,17 @@
+# docker compose run --rm releve            essai : relevé gardé dans $ETAT/config/releve-essai, rien n'est publié
+# MODE=publier docker compose run --rm releve   pour de bon : annonces, page, Supabase, GitHub (sync.sh)
+# Lancé chaque nuit par le cron du compte (docs/releve-serveur.md). L'état ($ETAT) est hors du dépôt : il n'est jamais publié.
+services:
+  releve:
+    build: .
+    image: insula-releve
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      MODE: ${MODE:-essai}
+      LISTES: ${LISTES:-}                # essai court : les N premières listes du plan
+    network_mode: host                   # le réseau du serveur : sur le pont Docker, Chromium n'ouvrait pas les pages de Bien'ici (ERR_ABORTED)
+    shm_size: 1gb                        # Chromium manque de mémoire partagée avec les 64 Mo par défaut
+    volumes:
+      - ../..:/depot                     # le clone du dépôt sur le serveur
+      - ${ETAT:-${HOME}/.local/share/insula-releve}/config:/home/releve/.config/immobilier-tool   # code du groupe, profil du navigateur, journal
+      - ${ETAT:-${HOME}/.local/share/insula-releve}/ssh:/home/releve/.ssh:ro                       # clé de déploiement GitHub (écriture sur le dépôt)
