@@ -21,3 +21,21 @@ Relevé quotidien des loyers et des ventes de studios, T2 et T3 pour le comparat
 
 7. Message (SendUserMessage) seulement s'il y a quelque chose à dire : le lundi, un résumé de la semaine (annonces par ville et par type, médianes, nouvelles ventes, vendues, fiches relevées et restant à relever) ; les autres jours, uniquement s'il y a des « affaires » dans le résumé (donne type, lien, secteur, prix et prix au m², et si sa fiche est relevée : DPE, charges de copropriété et une phrase utile tirée de la description), une baisse de prix sur une vente (type, lien, ancien → nouveau prix), une médiane qui bouge de 3 % ou plus par rapport au relevé précédent de la collection « releves » pour le même type (ignore la comparaison si le relevé précédent n'a pas ce type), un refus de Bien'ici pendant la lecture des fiches, une liste dans « gardes » (relevé partiel), ou une étape en échec. Pour une affaire, si sa fiche dit « résidence gérée » ou « viager », dis que le calcul ne s'applique pas ; si elle est vendue louée, donne le loyer actuel lu dans la description. Si le navigateur est injoignable ou qu'une page est refusée, n'invente rien : dis-le en une phrase.
 ```
+
+## Version 9 (proposée le 19 novembre 2026) — à coller seulement le jour où le serveur publie
+
+Le relevé (étapes 1 à 4 de la version 8) est fait chaque nuit par le serveur de la maison ([docs/releve-serveur.md](../docs/releve-serveur.md)), Bien'ici et notaires compris. La routine ne fait plus que ce qui demande Claude : lire les descriptions nouvelles, publier l'artefact et écrire le message. Ne la colle que le jour où le cron du serveur passe en `MODE=publier` : une routine qui relèverait encore Bien'ici seule ferait disparaître les annonces des notaires.
+
+```
+Lecture des annonces et message du jour pour le comparateur Insula (« Où acheter notre studio ? ») : artifact https://claude.ai/artifact/GwJBDtGHLFcKX16DL7E6fu, dossier « immobilier-tool » de l'ordinateur (/Users/Louis-Marie PERRET DU CRAY/immobilier-tool), site https://insula.du-cray.eu. Le relevé des annonces est fait chaque nuit par le serveur de la maison : ne relève rien toi-même. Réponds en français.
+
+1. Avec device_bash : cd "$HOME/mnt/"*immobilier-tool && git pull --rebase -q origin main && python3 tools/supabase_annonces.py pull --force (les annonces, l'historique et les fiches relevés par le serveur). Puis : ssh -o BatchMode=yes debian.home.arpa cat .local/share/insula-releve/config/resume-du-jour.json. C'est le résumé du relevé de la nuit : {date, releve: {listes, ok, echecs, stop, notaires…}, annonces: {villes, baisses, affaires, echecs, gardes}, fiches: {ajoutees, refus…}}. Garde-le pour les étapes 4 et 5. S'il n'est pas du jour, ou si « releve.stop » n'est pas vide, note-le pour le message.
+
+2. Lecture des descriptions (une seule fois par annonce) : exactement l'étape 4 bis de la version 8 (fiches.py a-lire --max 80, lecture-du-jour.json, fiches.py lu, build.py, supabase_annonces.py push). Les annonces des notaires ont déjà « loue » rempli par le notaire : ne le contredis que si la description dit clairement le contraire.
+
+3. Publie dist/artifact.html : exactement l'étape 5 de la version 8.
+
+4. Historique : exactement l'étape 6 de la version 8, avec le résumé de l'étape 1 (villes = annonces.villes, baisses et affaires comptées, fiches = fiches.ajoutees).
+
+5. Message : exactement l'étape 7 de la version 8, avec le résumé de l'étape 1. Ajoute, s'il y en a, le nombre d'annonces des notaires ajoutées (releve.notaires.ajoutees) et un relevé des notaires en erreur (releve.notaires.erreur). Si le résumé manque ou n'est pas du jour : dis en une phrase que le relevé de la nuit n'a pas eu lieu, sans rien inventer.
+```

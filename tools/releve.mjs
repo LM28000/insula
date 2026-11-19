@@ -115,10 +115,15 @@ if (idsN.length) { const o = await fichesNotaires(pageN, idsN); lots.push(o); bi
 fs.writeFileSync(path.join(OUT, "fiches-du-jour.json"), JSON.stringify({lots}));
 await ctx.close();
 
+/* résumé du jour (maj_annonces.py : villes, baisses, affaires, gardes ; fiches.py merge ; bilan du relevé), gardé hors du dépôt pour la
+   routine Claude qui ne fait plus que lire les descriptions et écrire les messages (tools/routine-releve.md, version 9) */
 if (PUBLIER) {
+  const res = {date: plan.date, releve: bilan};
   for (const c of [["tools/maj_annonces.py", "data/releve-du-jour.json"], ["tools/fiches.py", "merge", "data/fiches-du-jour.json"], ["build.py"], ["tools/supabase_annonces.py", "push"]]) {
     log("→", c.join(" ")); const s = py(...c); if (c[0] !== "build.py") log(s.trim().slice(0, 800));
+    try { if (c[0] === "tools/maj_annonces.py") res.annonces = JSON.parse(s); if (c[1] === "merge") res.fiches = JSON.parse(s); } catch (_) {}
   }
+  fs.writeFileSync(path.join(os.homedir(), ".config", "immobilier-tool", "resume-du-jour.json"), JSON.stringify(res));
 }
 bilan.minutes = Math.round((Date.now() - t0) / 6000) / 10;
 console.log(JSON.stringify(bilan));
