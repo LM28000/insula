@@ -1,6 +1,6 @@
 # Le relevé de la nuit sur le serveur
 
-Depuis le 19 novembre 2026, le relevé des annonces peut tourner sans la routine Claude, dans un conteneur Docker du serveur de la maison (Debian, `debian.home.arpa`). La routine reste en place tant que les deux relevés n'ont pas été comparés.
+Depuis le 19 novembre 2026, le relevé des annonces tourne sans la routine Claude, dans un conteneur Docker du serveur de la maison (Debian, `debian.home.arpa`), chaque nuit à 5 h 30, en mode publier. La routine Claude (version 9 de `tools/routine-releve.md`) ne fait plus que lire les descriptions et écrire les messages.
 
 ## Ce qui tourne
 
@@ -41,9 +41,9 @@ MODE=publier docker compose run --rm releve       # pour de bon
 tail -f ~/.local/share/insula-releve/config/releve.log
 ```
 
-Le cron du compte lance le relevé chaque nuit à 5 h 30, en essai pour l'instant (`crontab -l`).
+Le cron du compte lance le relevé chaque nuit à 5 h 30, en mode publier (`crontab -l`). Le clone pousse sur GitHub par `git@github.com:LM28000/insula.git`, avec la clé de déploiement de `~/.local/share/insula-releve/ssh` (`GIT_SSH_COMMAND` dans l'image).
 
-## Passer pour de bon au serveur
+## Passage pour de bon au serveur (fait le 19 novembre 2026)
 
 1. **Comparer** une nuit le relevé du serveur (`releve-essai/releve-du-jour.json`) avec celui de la routine.
 2. **Donner au serveur le droit de pousser** : créer une clé dans `~/.local/share/insula-releve/ssh`, l'ajouter comme clé de déploiement en écriture du dépôt `LM28000/insula`, et faire pointer `origin` du clone vers `git@github.com:LM28000/insula.git`.
