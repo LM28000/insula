@@ -17,7 +17,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
-import {releveNotaires, fichesNotaires, estNotaire} from "./notaires.mjs";
+import {releveNotaires, fichesNotaires, doublon} from "./notaires.mjs";
 
 const R = path.dirname(path.dirname(fileURLToPath(import.meta.url)));   /* le dossier a des espaces : pas de pathname brut */
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
@@ -85,14 +85,15 @@ if (bilan.stop) { await ctx.close(); console.log(JSON.stringify(bilan)); process
    relevée (sans elle, la liste de la veille reste entière) ; un refus des notaires n'arrête pas le relevé de Bien'ici */
 const pageN = NOT ? await ctx.newPage() : null, NOTIDS = new Set();
 if (NOT) try {
-  const {out, bilan: bn} = await releveNotaires(pageN, plan, R, log); let ajout = 0;
+  const {out, bilan: bn} = await releveNotaires(pageN, plan, R, log); let ajout = 0, doubles = 0;
   for (const [ck, T] of Object.entries(out)) for (const [ty, rows] of Object.entries(T)) {
     const v = villes[ck], dst = !v ? null : ty === "studio" ? v : v[ty];
     if (!dst || !dst.ventes) continue;
     const vus = new Set(dst.ventes.map(x => x[3]));
-    for (const x of rows) if (!vus.has(x[3])) { dst.ventes.push(x); vus.add(x[3]); NOTIDS.add(String(x[3]).split("/").pop()); ajout++; }
+    for (const x of rows) { if (vus.has(x[3])) continue; if (doublon(x, dst.ventes)) { doubles++; continue; }
+      dst.ventes.push(x); vus.add(x[3]); NOTIDS.add(String(x[3]).split("/").pop()); ajout++; }
   }
-  bilan.notaires = Object.assign(bn, {ajoutees: ajout}); bilan.annonces += ajout; log(`notaires : ${ajout} annonces ajoutées aux listes`);
+  bilan.notaires = Object.assign(bn, {ajoutees: ajout, doublons: doubles}); bilan.annonces += ajout; log(`notaires : ${ajout} annonces ajoutées aux listes, ${doubles} déjà sur Bien'ici`);
 } catch (e) { bilan.notaires = {erreur: e.message}; log("✗ notaires :", e.message); }
 const RELEVE = path.join(OUT, "releve-du-jour.json");
 fs.writeFileSync(RELEVE, JSON.stringify({date: plan.date, plafond: plan.plafond, villes}));

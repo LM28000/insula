@@ -17,6 +17,10 @@ const API = "/pub-services/inotr-www-annonces/v1/annonces";
 const TYPES = {1: "studio", 2: "t2", 3: "t3"};
 const pause = ms => new Promise(r => setTimeout(r, ms));
 export const estNotaire = lien => String(lien).startsWith(NOTAIRES + "/");
+/* même appartement déjà publié sur Bien'ici (des notaires y passent par des logiciels d'annonces) : même liste, moins de 1 m² et moins
+   de 1,5 % d'écart de prix. On garde alors l'annonce Bien'ici, qui a souvent une position. Essai du 19 novembre 2026 au Mans : 44,66 m²
+   à 78 440 € chez le notaire, 44 m² à 78 500 € sur Bien'ici. */
+export const doublon = (x, lignes) => lignes.some(b => !String(b[3]).startsWith("http") && Math.abs(b[0] - x[0]) <= 1 && Math.abs(b[2] - x[2]) <= 0.015 * x[2]);
 
 let DER = 0;   /* dernière demande au site : 10 à 14 s entre deux */
 async function demande(page, url) {
