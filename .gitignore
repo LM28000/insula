@@ -18,3 +18,5 @@ data/annoncesdata.js
 data/historique.js
 data/fiches/
 data/lecture-du-jour.json
+# vidages mémoire (Chromium du relevé sur le serveur)
+core.[0-9]*
