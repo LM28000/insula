@@ -724,6 +724,8 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
 .v3gain{background:var(--bg);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;gap:4px}
 .v3gain b{font-size:15px}
 .v3gain small{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.v3gainhz{font-size:14px}
+.v3gainhz b{font-size:14px}
 .v3ql{display:flex;flex-direction:column}
 .v3ql button{display:flex;align-items:center;gap:10px;min-height:46px;border:0;border-top:1px solid var(--line);background:none;padding:0 2px;font:inherit;color:var(--fg);text-align:left;cursor:pointer}
 .v3ql button:first-child{border-top:0}

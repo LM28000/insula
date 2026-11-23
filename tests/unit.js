@@ -72,6 +72,8 @@ const g0 = E('CALCC.clear(); calc(C.find(c=>c.k==="lemans"))'), g1 = E('H.gestio
 ok('gestion par agence : 0 par défaut, rien ne change', E('H.gestion') === 0 && g0.gest === 0);
 ok('gestion par agence 9,5 % : cash-flow brut plus bas de 9,5 % du loyer encaissé, rendement plus bas', near(g0.cfBrut - g1.cfBrut, g1.rentEff * 0.095, 1e-6) && g1.irr < g0.irr, `${g0.cfBrut} ${g1.cfBrut} ${g1.rentEff}`);
 // scénarios : prix 0,5 point plus bas (prudent) ou plus haut (favorable)
+const d15 = E('(()=>{const c=C.find(c=>c.k==="lemans"), d=H.duree; CALCC.clear(); const a=calc(c); H.duree=15; CALCC.clear(); const b=calc(c); H.duree=d; CALCC.clear(); return {a:[a.poche[0],a.poche[a.hz],a.gains[a.hz],a.irr,a.hz],b:[b.poche[b.hz],b.gains[b.hz],b.irr]};})()');
+ok('sorti de notre poche : l\'apport au départ ; crédit sur 15 ans au lieu de 25 : plus sorti à la revente, rendement plus bas', d15.a[0] === E('H.apport') && d15.b[0] > d15.a[1] && d15.b[2] < d15.a[3] && d15.a[4] === 15, JSON.stringify(d15));
 const sx = E('(()=>{const c=C.find(c=>c.k==="lemans"); CALCC.clear(); const m=calc(c).px; H.pess=true; CALCC.clear(); const p=calc(c).px; H.pess=false; H.fav=true; CALCC.clear(); const f=calc(c).px; H.fav=false; CALCC.clear(); return [m,p,f];})()');
 ok('scénarios : prix 0,5 point par an plus bas ou plus haut', near(sx[1], sx[0] - 0.5, 1e-9) && near(sx[2], sx[0] + 0.5, 1e-9), sx.join());
 // mois vides mesurés : médiane de Kaplan-Meier (annonces encore en ligne comptées « au moins »)

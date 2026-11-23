@@ -40,7 +40,8 @@ async function mlRoutes(p) {
     ok('ajout d\'un bien · placé sur la carte à son adresse', await p.evaluate(() => { const f = V2MAP().getSource('annonces')._data.features.find(f => f.properties.k === 'b|' + BIENS[0].id); return !!f && Math.abs(f.geometry.coordinates[1] - BIENS[0].lat) < 1e-6 && !f.properties.ap; }));
     await p.evaluate(() => { __tab('biens'); __cl(`[data-v2open="b|${BIENS[0].id}"]`); }); await p.waitForTimeout(600);
     ok('ajout d\'un bien · la fiche dit qu\'il est à l\'adresse saisie', await p.evaluate(() => /Sur la carte : à l'adresse saisie/.test((document.querySelector('#v2fiche .v2pos') || {}).textContent || '')));
-    ok('ajout d\'un bien · bruit mesuré à l\'adresse (voies de la ville : grands axes et voies ferrées, avec leur nom)', await p.evaluate(() => Array.isArray(BIENS[0].geo.bruit) && BIENS[0].geo.bruit.length === 3 && BIENS[0].geo.bruit.some(x => x && x[0] >= 0 && typeof x[1] === 'string')), await p.evaluate(() => JSON.stringify(BIENS[0].geo.bruit)));
+    await p.waitForFunction(() => BIENS[0] && BIENS[0].geo && Array.isArray(BIENS[0].geo.bruit), null, {timeout: 8000}).catch(() => {});   /* la liste commune simulée peut repasser par BIENS juste avant */
+    ok('ajout d\'un bien · bruit mesuré à l\'adresse (voies de la ville : grands axes et voies ferrées, avec leur nom)', await p.evaluate(() => Array.isArray(BIENS[0]?.geo?.bruit) && BIENS[0].geo.bruit.length === 3 && BIENS[0].geo.bruit.some(x => x && x[0] >= 0 && typeof x[1] === 'string')), await p.evaluate(() => JSON.stringify(BIENS[0]?.geo?.bruit ?? BIENS[0] ?? null)));
     ok('ajout d\'un bien · adresse sans erreur', errs.length === 0, errs.join(' | '));
     await c.close(); }
   // thème : clair par défaut même si l'appareil est en sombre ; clair, sombre ou comme l'appareil, dans Réglages ; la carte change de fond et garde ses couches
@@ -127,6 +128,8 @@ async function mlRoutes(p) {
     await open('c|' + s2.ck); await p.waitForTimeout(800); await p.evaluate(() => __qall()); await p.waitForTimeout(400);
     const o2 = await p.evaluate(() => { const d = document.querySelector('#v2fiche details[data-sec="offre"]'); return d ? d.innerText : ''; });
     ok('résidences et chantiers · fiche de la ville : places pour 100 étudiants, logements et studios autorisés par an', /pour 100 étudiants/.test(o2) && /par an, dont \d[\d  ]* studios/.test(o2), o2.slice(0, 300));
+    const gz = await p.evaluate(() => { const g = document.querySelector('#v2fiche .v3gain'); return g ? g.innerText : ''; });
+    ok('fiche de la ville · si on revend : le gain au bout de 15 ans et ce qu\'on a sorti de notre poche, apport compris', /Au bout de 15 ans : [+−]\s?\d[\d\s\u202f]* € pour \d[\d\s\u202f]*\s?€ sortis de notre poche/.test(gz) && /apport/.test(gz), JSON.stringify(gz.slice(0, 300)));
     const at2 = await p.evaluate(() => { CONCQ.zz = {maj: '2026-11-10', res: [], pc: [[0.2, 48, '2026-06', 2, '', '', 180, 150, 10, 180, 2, 0, 'SCCV T', '1 rue T']]}; return concAttn({ville: 'zz', id: 'x', adresse: '1 rue T', lat: 48.001, lon: 0.2}, null).map(z => z[1]).join(' | '); });
     ok('résidences et chantiers · point d\'attention : résidence étudiante neuve à moins de 500 m', /Résidence étudiante de 180 logements autorisée en juin 2026 à 110 m/.test(at2), at2);
     await p.evaluate(() => { __tab('carte'); }); await p.waitForTimeout(600);

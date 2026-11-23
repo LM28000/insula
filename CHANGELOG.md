@@ -4,6 +4,8 @@ Les grandes étapes du site. Le détail de chaque changement est dans l'historiq
 
 ## 23 novembre 2026 — La routine retrouve le résumé de la nuit
 
+- Fiche, « Si on revend » : le gain en euros au bout de 15 ans et ce qu'on a sorti de notre poche pour l'avoir (apport, plus les mois négatifs, moins les mois positifs). Un crédit plus court fait baisser le rendement mais monter le gain : les deux se voient.
+
 - Le résumé du relevé de la nuit passe par Supabase avec les annonces. Une tâche du Mac (`tools/matin-mac.sh`, 7 h 45) les reprend dans le dossier du projet, seul endroit que voit la routine Claude. Du 20 au 22 novembre, la routine s'était arrêtée sans rien lire, faute de trouver le résumé.
 
 ## 19 novembre 2026 — Le relevé sur le serveur, et les notaires

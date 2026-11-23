@@ -1118,6 +1118,8 @@ html.v3,html.v3 body{overscroll-behavior-y:none}
 .v3gain{background:var(--bg);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;gap:4px}
 .v3gain b{font-size:15px}
 .v3gain small{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.v3gainhz{font-size:14px}
+.v3gainhz b{font-size:14px}
 .v3ql{display:flex;flex-direction:column}
 .v3ql button{display:flex;align-items:center;gap:10px;min-height:46px;border:0;border-top:1px solid var(--line);background:none;padding:0 2px;font:inherit;color:var(--fg);text-align:left;cursor:pointer}
 .v3ql button:first-child{border-top:0}
@@ -1820,19 +1822,19 @@ function calc(c){
     const u=Math.min(res,stock); stock-=u; res-=u; cumAB+=Math.min(u,bAcc-cumAB); taxable=res;}
    T.push(gross?0:taxable*taxRate()+rF*(1-FISC.abatFoncier)*taxRateF()); F.push(gross?0:fees); AB.push(reg==="reel"?cumAB:0);}
   const pvT=(b,sa,k,t,a)=>gross?0:pvTax(b,sa,k,t,a);
-  const f=[-H.apport], gains=[bien-P-H.apport]; let crd=P, cum=0, r=taux/1200;
+  const f=[-H.apport], gains=[bien-P-H.apport], poche=[H.apport]; let crd=P, cum=0, r=taux/1200;   /* poche[k] : apport moins le cumul des mois (négatifs ajoutés, positifs retranchés) après k ans */
   for(let m=1;m<=300;m++){const y=Math.floor((m-1)/12);
    const v=rentAt(y)*Math.pow(1+H.ly/100,y)*(1-gst)-charges*Math.pow(1+H.cg/100,y)-(m<=n?mens:0)-(T[y]+F[y])/12;
    if(m<=n) crd=crd*(1+r)-M0; cum+=v; if(m<=HZ*12) f.push(v);
    const sale=k=>bien*Math.pow(1+px/100,k)*(1-(H.fraisVente||0)/100); /* prix de revente net des frais (agence, diagnostics) */
    if(m===HZ*12) f[f.length-1]+=sale(HZ)-Math.max(crd,0)-pvT(bien,sale(HZ),HZ,trav,AB[HZ-1]);
-   if(m%12===0){const k=m/12; gains.push(sale(k)-Math.max(crd,0)-(H.apport-cum)-pvT(bien,sale(k),k,trav,AB[k-1]));}}
-  return {reg,T,F,AB,CP,f,gains,irr:irrMonthly(f)};}
+   if(m%12===0){const k=m/12; poche.push(H.apport-cum); gains.push(sale(k)-Math.max(crd,0)-(H.apport-cum)-pvT(bien,sale(k),k,trav,AB[k-1]));}}
+  return {reg,T,F,AB,CP,f,gains,poche,irr:irrMonthly(f)};}
  let R; if(H.regime==="auto"){const a=sim("micro"), b=sim("reel"); R=(b.irr??-99)>(a.irr??-99)?b:a;} else R=sim(H.regime);
  const G=sim("micro",true), imp1=R.T[0], fees1=R.F[0], r1=rentAt(0), gest=r1*gst, cfBrut=r1-gest-mens-charges, cfNet=cfBrut-(imp1+fees1)/12, N=H.net;
  const pv15=pvTax(bien,bien*Math.pow(1+px/100,HZ)*(1-(H.fraisVente||0)/100),HZ,trav,R.AB[HZ-1]);
  const W=H.assoc.map(a=>(a.tmi+FISC.ps)*a.part), Ws=W.reduce((s,w)=>s+w,0)||1, imps=W.map(w=>imp1*w/Ws), impA=imps[0];
- return {plaf,zt:typeof ZTEN!=="undefined"&&ZTEN.has(c.k),bien,cost,gar,P,M0,ins,mens,rentHC,rentEff,tf,charges,gest,vac,px,cf:N?cfNet:cfBrut,cfNet,cfBrut,irrNet:R.irr,irrBrut:G.irr,gainsNet:R.gains,gainsBrut:G.gains,net:N,pv15,imp1,fees1,compta1:R.CP[0]||0,impA,impB:imp1-impA,imps,ratios,regime:R.reg,imp10:R.T.slice(0,10).reduce((a,b)=>a+b,0)/10,
+ return {plaf,zt:typeof ZTEN!=="undefined"&&ZTEN.has(c.k),bien,cost,gar,P,M0,ins,mens,rentHC,rentEff,tf,charges,gest,vac,px,cf:N?cfNet:cfBrut,cfNet,cfBrut,irrNet:R.irr,irrBrut:G.irr,gainsNet:R.gains,gainsBrut:G.gains,poche:N?R.poche:G.poche,net:N,pv15,imp1,fees1,compta1:R.CP[0]||0,impA,impB:imp1-impA,imps,ratios,regime:R.reg,imp10:R.T.slice(0,10).reduce((a,b)=>a+b,0)/10,
   brut,ratio,irr:N?R.irr:G.irr,gains:N?R.gains:G.gains,hz:HZ,loan:L,taux};
 }
 
@@ -4541,7 +4543,10 @@ render();
  const attnL=h=>{const d=document.createElement("div"); d.innerHTML=h||""; return [...d.querySelectorAll("li.bad,li.warn")].map(li=>[li.className,li.innerHTML]).sort((a,b)=>(a[0]==="bad"?0:1)-(b[0]==="bad"?0:1));};
  const chiffres=(x,hc)=>`<div class="v3chf">${[["Rendement",hc?"var(--muted)":cv(colIrr(x.irr)),pctS(x.irr),hc?"indicatif":"par an, sur 15 ans"],["Cash-flow",Math.round(x.cf)===0?"var(--fg)":cfC(x.cf),Math.round(x.cf)===0?"0 €":sgn(x.cf),`par mois${H.assoc.length>1?", à "+H.assoc.length:""}`],["Budget","var(--fg)",keur(x.cost),"tout compris"]].map(([l,c,v,s])=>`<div><span>${l}</span><b class="mono" style="color:${c}">${v}</b><small>${s}</small></div>`).join("")}</div>`;
  /* « Combien ça coûte et rapporte ? » : le scénario affiché, les trois rendements, et à partir de quand on est gagnant si l'on revend */
- const argentX=(x,z)=>{const g=typeof gainTxt==="function"?gainTxt(x):""; return `${scnRow()}${z&&z.prudent!=null?`<p class="v2sub" style="margin:0">Rendement selon les hypothèses : prudentes ${pctS(z.prudent)}, centrales ${pctS(z.central??x.irr)}, favorables ${pctS(z.favorable)}.</p>`:""}${g?`<div class="v3gain"><b>Si on revend : ${g}</b><small>Gagnant : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et tout ce qu'on a sorti de notre poche (apport et mois négatifs).</small></div>`:""}`;};
+ const argentX=(x,z)=>{const g=typeof gainTxt==="function"?gainTxt(x):""; return `${scnRow()}${z&&z.prudent!=null?`<p class="v2sub" style="margin:0">Rendement selon les hypothèses : prudentes ${pctS(z.prudent)}, centrales ${pctS(z.central??x.irr)}, favorables ${pctS(z.favorable)}.</p>`:""}${g?`<div class="v3gain"><b>Si on revend : ${g}</b>${gainHz(x)}<small>Gagnant : le prix de vente rembourse le crédit restant, l'impôt sur la plus-value et tout ce qu'on a sorti de notre poche (apport et mois négatifs).</small></div>`:""}`;};
+ /* à la revente (x.hz ans) : le gain en euros et ce qu'on a sorti de notre poche pour l'avoir (apport, plus les mois négatifs, moins les mois positifs) */
+ const gainHz=x=>{const k=x.hz, G=x.gains&&x.gains[k], P=x.poche&&x.poche[k]; if(G==null||P==null) return ""; const d=P-H.apport;
+  return `<span class="v3gainhz">Au bout de ${k} ans : <b class="mono" style="color:${G>=0?"var(--ok)":"var(--bad)"}">${G>=0?"+ ":"− "}${eur(Math.abs(G))}</b> pour <b class="mono">${eur(Math.max(P,0))}</b> sortis de notre poche</span><small>${Math.round(d)===0?`l'apport (${eur(H.apport)}), les loyers couvrant tout le reste`:d>0?`apport ${eur(H.apport)} et ${eur(d)} ajoutés au fil des mois`:`apport ${eur(H.apport)}, dont ${eur(-d)} déjà revenus par les loyers`}</small>`;};
  function bienOfSel(s){const [k,...r]=s.split("|"); if(k==="b"){const b=BIENS.find(x=>x.id===r[0]); return b?{b,kind:"b"}:null;}
   if(k==="v"){const ck=r[0], suf=r.slice(1).join("|"), a=(ADS[ck]&&ADS[ck].ventes||[]).find(v=>v[3]===suf); if(!a) return null; const ex=bienOf(venteUrl(suf)); return {b:Object.assign(venteBien(ck,a),{kind:"v",suf}),a,ck,suf,ex:ex&&!isOut(ex)?ex:null,kind:"v"};}
   return null;}

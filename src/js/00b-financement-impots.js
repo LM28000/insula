@@ -108,19 +108,19 @@ function calc(c){
     const u=Math.min(res,stock); stock-=u; res-=u; cumAB+=Math.min(u,bAcc-cumAB); taxable=res;}
    T.push(gross?0:taxable*taxRate()+rF*(1-FISC.abatFoncier)*taxRateF()); F.push(gross?0:fees); AB.push(reg==="reel"?cumAB:0);}
   const pvT=(b,sa,k,t,a)=>gross?0:pvTax(b,sa,k,t,a);
-  const f=[-H.apport], gains=[bien-P-H.apport]; let crd=P, cum=0, r=taux/1200;
+  const f=[-H.apport], gains=[bien-P-H.apport], poche=[H.apport]; let crd=P, cum=0, r=taux/1200;   /* poche[k] : apport moins le cumul des mois (négatifs ajoutés, positifs retranchés) après k ans */
   for(let m=1;m<=300;m++){const y=Math.floor((m-1)/12);
    const v=rentAt(y)*Math.pow(1+H.ly/100,y)*(1-gst)-charges*Math.pow(1+H.cg/100,y)-(m<=n?mens:0)-(T[y]+F[y])/12;
    if(m<=n) crd=crd*(1+r)-M0; cum+=v; if(m<=HZ*12) f.push(v);
    const sale=k=>bien*Math.pow(1+px/100,k)*(1-(H.fraisVente||0)/100); /* prix de revente net des frais (agence, diagnostics) */
    if(m===HZ*12) f[f.length-1]+=sale(HZ)-Math.max(crd,0)-pvT(bien,sale(HZ),HZ,trav,AB[HZ-1]);
-   if(m%12===0){const k=m/12; gains.push(sale(k)-Math.max(crd,0)-(H.apport-cum)-pvT(bien,sale(k),k,trav,AB[k-1]));}}
-  return {reg,T,F,AB,CP,f,gains,irr:irrMonthly(f)};}
+   if(m%12===0){const k=m/12; poche.push(H.apport-cum); gains.push(sale(k)-Math.max(crd,0)-(H.apport-cum)-pvT(bien,sale(k),k,trav,AB[k-1]));}}
+  return {reg,T,F,AB,CP,f,gains,poche,irr:irrMonthly(f)};}
  let R; if(H.regime==="auto"){const a=sim("micro"), b=sim("reel"); R=(b.irr??-99)>(a.irr??-99)?b:a;} else R=sim(H.regime);
  const G=sim("micro",true), imp1=R.T[0], fees1=R.F[0], r1=rentAt(0), gest=r1*gst, cfBrut=r1-gest-mens-charges, cfNet=cfBrut-(imp1+fees1)/12, N=H.net;
  const pv15=pvTax(bien,bien*Math.pow(1+px/100,HZ)*(1-(H.fraisVente||0)/100),HZ,trav,R.AB[HZ-1]);
  const W=H.assoc.map(a=>(a.tmi+FISC.ps)*a.part), Ws=W.reduce((s,w)=>s+w,0)||1, imps=W.map(w=>imp1*w/Ws), impA=imps[0];
- return {plaf,zt:typeof ZTEN!=="undefined"&&ZTEN.has(c.k),bien,cost,gar,P,M0,ins,mens,rentHC,rentEff,tf,charges,gest,vac,px,cf:N?cfNet:cfBrut,cfNet,cfBrut,irrNet:R.irr,irrBrut:G.irr,gainsNet:R.gains,gainsBrut:G.gains,net:N,pv15,imp1,fees1,compta1:R.CP[0]||0,impA,impB:imp1-impA,imps,ratios,regime:R.reg,imp10:R.T.slice(0,10).reduce((a,b)=>a+b,0)/10,
+ return {plaf,zt:typeof ZTEN!=="undefined"&&ZTEN.has(c.k),bien,cost,gar,P,M0,ins,mens,rentHC,rentEff,tf,charges,gest,vac,px,cf:N?cfNet:cfBrut,cfNet,cfBrut,irrNet:R.irr,irrBrut:G.irr,gainsNet:R.gains,gainsBrut:G.gains,poche:N?R.poche:G.poche,net:N,pv15,imp1,fees1,compta1:R.CP[0]||0,impA,impB:imp1-impA,imps,ratios,regime:R.reg,imp10:R.T.slice(0,10).reduce((a,b)=>a+b,0)/10,
   brut,ratio,irr:N?R.irr:G.irr,gains:N?R.gains:G.gains,hz:HZ,loan:L,taux};
 }
 
