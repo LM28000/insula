@@ -2,6 +2,10 @@
 
 Les grandes étapes du site. Le détail de chaque changement est dans l'historique git, où les messages de commit sont rédigés. Les notes de l'app Android sont dans son propre dépôt.
 
+## 23 novembre 2026 — La routine retrouve le résumé de la nuit
+
+- Le résumé du relevé de la nuit passe par Supabase avec les annonces. Une tâche du Mac (`tools/matin-mac.sh`, 7 h 45) les reprend dans le dossier du projet, seul endroit que voit la routine Claude. Du 20 au 22 novembre, la routine s'était arrêtée sans rien lire, faute de trouver le résumé.
+
 ## 19 novembre 2026 — Le relevé sur le serveur, et les notaires
 
 - Le relevé de la nuit peut tourner sans la routine Claude : `tools/releve.mjs`, dans un conteneur Docker du serveur de la maison (`docker/releve`, [docs/releve-serveur.md](docs/releve-serveur.md)).

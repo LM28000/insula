@@ -20,3 +20,5 @@ data/fiches/
 data/lecture-du-jour.json
 # vidages mémoire (Chromium du relevé sur le serveur)
 core.[0-9]*
+# résumé de la nuit copié du serveur (tools/matin-mac.sh), pour la routine
+data/prive/

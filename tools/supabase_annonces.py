@@ -38,6 +38,9 @@ def rows():
     sys.path.insert(0, os.path.join(R, "tools")); from fiches import ficx_tous
     out = [("ads", ads), ("hist", hist), ("ficx", ficx_tous(fich, ids))]
     out += [("fiches-" + ck, c) for ck, c in fich.items()]
+    # résumé de la nuit (écrit par tools/releve.mjs sur le serveur), pour la routine Claude du Mac (tools/matin-mac.sh le reprend)
+    rp = os.path.join(R, "data/prive/resume-du-jour.json")
+    if os.path.exists(rp): out.append(("resume", json.load(open(rp, encoding="utf-8"))))
     return out
 
 
@@ -74,6 +77,7 @@ def main():
         put("data/historique.js", "const HIST=" + json.dumps(by.get("hist", {}), ensure_ascii=False, separators=(",", ":")) + ";\n")
         for k, v in by.items():
             if k.startswith("fiches-"): put(f"data/fiches/{k[7:]}.json", json.dumps(v, ensure_ascii=False, separators=(",", ":")))
+        if "resume" in by: put("data/prive/resume-du-jour.json", json.dumps(by["resume"], ensure_ascii=False))
         print(json.dumps({"ecrits": out}, ensure_ascii=False, indent=1)); return
     res = {"envoyees": [], "erreurs": []}
     import time

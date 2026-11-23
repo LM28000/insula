@@ -26,6 +26,7 @@ La lecture des descriptions (vendu loué, loyer, travaux…) demande un modèle 
 | `~/insula` | le clone du dépôt, mis à jour avant chaque relevé |
 | `~/insula/docker/releve` | l'image (`Dockerfile`), sa configuration (`compose.yaml`) et son lancement (`releve-docker.sh`) |
 | `~/.local/share/insula-releve/config` | le code du groupe (`groupe`, lisible par le compte seulement), le profil du navigateur, le journal (`releve.log`) et, en essai, le relevé (`releve-essai/`) |
+| `~/insula/data/prive` | le résumé de la nuit (`resume-du-jour.json`, ignoré par git), envoyé dans Supabase avec les annonces |
 | `~/.local/share/insula-releve/ssh` | la clé de déploiement GitHub, en mode publier |
 
 Rien de cela n'est dans le dépôt, et rien n'est publié.
@@ -51,4 +52,4 @@ Le cron du compte lance le relevé chaque nuit à 5 h 30, en mode publier (`cron
 3. **Passer le cron en `MODE=publier`.**
 4. **Le même jour, réduire la routine Claude** à la lecture des descriptions et aux messages. Une routine qui relèverait encore Bien'ici seule ferait disparaître les annonces des notaires de ses relevés : au bout de deux jours, `maj_annonces.py` les compterait vendues.
 5. **Sur le Mac**, avant de construire la page, reprendre les annonces du serveur : `python3 tools/supabase_annonces.py pull --force`.
-6. **Sur le Mac, installer la copie du résumé de la nuit** pour la routine version 9 : `./install-resume.sh`. La routine lit des textes écrits par des tiers avec un accès au Mac (audit F6/F7) : elle ne reçoit aucun accès au serveur.
+6. **Sur le Mac, installer la tâche du matin** pour la routine version 9 : `./install-resume.sh`. Chaque matin à 7 h 45 (et au démarrage), `tools/matin-mac.sh` reprend dans Supabase les annonces de la nuit et le résumé que le serveur y a envoyé avec elles (`data/prive/resume-du-jour.json`, ignoré par git) ; il suffit d'internet. Journal : `~/.config/immobilier-tool/matin.log`. La routine lit des textes écrits par des tiers avec un accès au Mac (audit F6/F7) : elle ne reçoit ni accès au serveur ni code de groupe. Elle ne voit d'ailleurs que le dossier du projet (pas `~/.config`) : du 20 au 22 novembre 2026, faute d'y trouver le résumé, elle s'est arrêtée sans rien lire. Ses lectures partent dans Supabase par la synchronisation du Mac (`sync.sh`).
