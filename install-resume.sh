@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installe la tâche du matin du Mac (7 h 45, et au démarrage) : tools/matin-mac.sh reprend dans Supabase les annonces relevées cette nuit
+# Installe la tâche du matin du Mac (7 h 45, au démarrage, puis toutes les heures tant que le résumé du jour n'est pas arrivé) : tools/matin-mac.sh reprend dans Supabase les annonces relevées cette nuit
 # par le serveur, avec le résumé de la nuit (data/prive/, ignoré par git), pour la routine Claude version 9 (tools/routine-releve.md),
 # qui ne voit que le dossier du projet et n'a aucun accès au serveur. Journal : ~/.config/immobilier-tool/matin.log
 D="$(cd "$(dirname "$0")" && pwd)"
@@ -15,7 +15,8 @@ cat > "$PLIST" <<PL
   <key>StandardOutPath</key><string>$HOME/.config/immobilier-tool/matin.log</string>
   <key>StandardErrorPath</key><string>$HOME/.config/immobilier-tool/matin.log</string>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>45</integer></dict>
+  <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><true/>
 </dict></plist>
 PL
-launchctl unload "$PLIST" 2>/dev/null; launchctl load "$PLIST" && echo "Tâche du matin installée (7 h 45 et au démarrage) : annonces reprises de Supabase, résumé dans data/prive/resume-du-jour.json"
+launchctl unload "$PLIST" 2>/dev/null; launchctl load "$PLIST" && echo "Tâche du matin installée (7 h 45, au démarrage, puis toutes les heures si besoin) : annonces reprises de Supabase, résumé dans data/prive/resume-du-jour.json"

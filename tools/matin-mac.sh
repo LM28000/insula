@@ -12,6 +12,10 @@ now() { date '+%F %T'; }
 export PYTHONDONTWRITEBYTECODE=1
 mkdir -p data/prive && chmod 700 data/prive
 M=.git/supabase-envoi
+# déjà repris aujourd'hui : rien à faire (la tâche repasse toutes les heures, au cas où le Mac était hors ligne à 7 h 45)
+[ "$(python3 -c 'import json;print(json.load(open("data/prive/resume-du-jour.json"))["date"])' 2>/dev/null)" = "$(date +%F)" ] && exit 0
+# le serveur publie vers 7 h 20 : pas avant 7 h 30
+[ "$(date +%H%M)" -lt 0730 ] && exit 0
 # des lectures de la veille pas encore envoyées dans Supabase : ne pas les écraser
 if [ -f "$M" ] && [ -n "$(find data/annoncesdata.js data/historique.js data/fiches -newer "$M" 2>/dev/null | head -1)" ]; then
   echo "$(now) données du Mac pas encore envoyées dans Supabase : reprise remise à plus tard"
