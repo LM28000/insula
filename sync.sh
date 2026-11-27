@@ -67,7 +67,11 @@ if [ -f data/annoncesdata.js ] && { [ ! -f "$M" ] || [ -n "$(find data/annoncesd
 fi
 
 # 5. récupérer GitHub puis pousser ; un conflit bloque la publication au lieu d'être masqué
-git pull --rebase --quiet origin main || { git rebase --abort >/dev/null 2>&1; fail "conflit avec GitHub : à résoudre à la main"; }
+# sans réseau (GitHub injoignable, Mac sorti de veille), ce n'est pas un conflit : on le dit, sans alerte, et on réessaie au prochain passage
+if ! git pull --rebase --quiet origin main; then
+  if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then git rebase --abort >/dev/null 2>&1; fail "conflit avec GitHub : à résoudre à la main"; fi
+  echo "$(now) GitHub injoignable (pas d'internet ?) : nouvel essai au prochain passage"; exit 1
+fi
 if [ -n "$(git log --oneline origin/main..HEAD 2>/dev/null)" ]; then
   git push --quiet origin main && echo "$(now) poussé : $(git log -1 --format=%s)" || echo "$(now) échec du push (nouvel essai au prochain passage)"
 fi
